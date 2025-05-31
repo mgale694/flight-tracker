@@ -40,6 +40,26 @@ This project is a Streamlit application that allows users to track flights based
 - The application will display flight information for flights currently overhead based on the selected direction.
 - The information includes flight callsigns, origin and destination airports, and the current time of tracking.
 
+## Application Screenshots
+
+### 1. User Input Flow
+
+![User Input Flow](docs/img/meta.png)
+
+_The user enters their address/postcode, checks and confirms the location, then selects direction and search radius._
+
+### 2. Map Display
+
+![Map Display](docs/img/map.png)
+
+_The app displays the real location, search center, and search radius on an interactive map._
+
+### 3. Flights Display
+
+![Flights Display](docs/img/flights.png)
+
+_Flight information is shown using metrics for each flight overhead, including callsign, route, and time._
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a pull request or open an issue for any enhancements or bug fixes.
