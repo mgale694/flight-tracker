@@ -122,8 +122,8 @@ try:
                 time_draw.line((-5, 15, epd.height, 15), fill=0, width=1)
 
                 from_str = f"FROM: {flight.origin_airport_name}"
-                if len(from_str) > 33:
-                    from_str = from_str[:33] + "..."
+                if len(from_str) > 32:
+                    from_str = from_str[:32] + "..."
                 time_draw.text((5, 20), from_str, font=font15, fill=0)
                 time_draw.text(
                     (5, 36), f"AIRLINE: {flight.airline_name}", font=font15, fill=0
