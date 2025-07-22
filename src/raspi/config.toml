@@ -1,0 +1,43 @@
+# Flight Tracker Configuration
+# Following pwnagotchi configuration pattern
+
+[main]
+# Basic flight tracker settings
+address = "31 Maltings Place, Fulham, London, SW62BU"
+search_radius_meters = 3000
+max_flights = 20
+max_elapsed_time = 1800                               # 30 minutes in seconds
+
+[ui]
+# UI behavior settings
+boot_screen_duration = 10
+scan_update_interval = 2
+flight_display_duration = 5
+
+# Display configuration (pwnagotchi style)
+[ui.display]
+enabled = true
+type = "waveshare213inb_v4"
+rotation = 180
+color = "black"
+
+# Font settings
+[ui.font]
+name = "DejaVuSansMono"
+size_offset = 0
+
+[logging]
+# Logging configuration
+level = "INFO"
+path = "/tmp/flight_tracker.log"
+max_size = "10MB"
+
+[api]
+# API settings
+user_agent = "Flight Tracker v1.0"
+timeout = 30
+retry_attempts = 3
+
+[development]
+# Development mode settings for laptop testing
+enabled = false
