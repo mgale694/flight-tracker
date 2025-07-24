@@ -2,26 +2,7 @@ import logging
 
 # Import local hardware display implementations
 try:
-    from .inky import Inky
-    from .papirus import Papirus
-    from .oledhat import OledHat
-    from .adafruitssd1306i2c import AdafruitSSD1306i2c
-    from .lcdhat import LcdHat
-    from .dfrobot1 import DFRobotV1
-    from .dfrobot2 import DFRobotV2
-    from .waveshare1 import WaveshareV1
-    from .waveshare2 import WaveshareV2
-    from .waveshare3 import WaveshareV3
-    from .waveshare27inch import Waveshare27inch
-    from .waveshare29inch import Waveshare29inch
-    from .waveshare144lcd import Waveshare144lcd
-    from .waveshare154inch import Waveshare154inch
-    from .waveshare213d import Waveshare213d
-    from .waveshare213bc import Waveshare213bc
     from .waveshare213in_v4 import Waveshare213V4
-    from .waveshare213inb_v4 import Waveshare213bV4
-    from .waveshare35lcd import Waveshare35lcd
-    from .spotpear24inch import Spotpear24inch
 
     RASPI_AVAILABLE = True
     logging.info("Local hardware display modules loaded successfully")
@@ -51,68 +32,9 @@ def display_for(config):
     # Handle hardware displays if available
     if RASPI_AVAILABLE:
         print("🔧 Checking local hardware display implementations...")
-        if display_type == "inky":
-            print("✓ Using Inky display")
-            return Inky(config)
-        elif display_type == "papirus":
-            print("✓ Using Papirus display")
-            return Papirus(config)
-        elif display_type == "oledhat":
-            print("✓ Using OledHat display")
-            return OledHat(config)
-        elif display_type == "adafruitssd1306i2c":
-            print("✓ Using AdafruitSSD1306i2c display")
-            return AdafruitSSD1306i2c(config)
-        elif display_type == "lcdhat":
-            print("✓ Using LcdHat display")
-            return LcdHat(config)
-        elif display_type == "dfrobot_1":
-            print("✓ Using DFRobotV1 display")
-            return DFRobotV1(config)
-        elif display_type == "dfrobot_2":
-            print("✓ Using DFRobotV2 display")
-            return DFRobotV2(config)
-        elif display_type == "waveshare_1":
-            print("✓ Using WaveshareV1 display")
-            return WaveshareV1(config)
-        elif display_type == "waveshare_2":
-            print("✓ Using WaveshareV2 display")
-            return WaveshareV2(config)
-        elif display_type == "waveshare_3":
-            print("✓ Using WaveshareV3 display")
-            return WaveshareV3(config)
-        elif display_type == "waveshare27inch":
-            print("✓ Using Waveshare27inch display")
-            return Waveshare27inch(config)
-        elif display_type == "waveshare29inch":
-            print("✓ Using Waveshare29inch display")
-            return Waveshare29inch(config)
-        elif display_type == "waveshare144lcd":
-            print("✓ Using Waveshare144lcd display")
-            return Waveshare144lcd(config)
-        elif display_type == "waveshare154inch":
-            print("✓ Using Waveshare154inch display")
-            return Waveshare154inch(config)
-        elif display_type == "waveshare213d":
-            print("✓ Using Waveshare213d display")
-            return Waveshare213d(config)
-        elif display_type == "waveshare213bc":
-            print("✓ Using Waveshare213bc display")
-            return Waveshare213bc(config)
-        elif display_type in ["waveshare213in_v4", "waveshare2in13v4"]:
+        if display_type in ["waveshare213in_v4", "waveshare2in13v4"]:
             print("✓ Using Waveshare213V4 display (waveshare213in_v4/waveshare2in13v4)")
             return Waveshare213V4(config)
-        elif display_type in ["waveshare213inb_v4", "waveshare2in13v4"]:
-            print(
-                "✓ Using Waveshare213bV4 display (waveshare213inb_v4/waveshare2in13v4)"
-            )
-            return Waveshare213bV4(config)
-        elif display_type == "waveshare35lcd":
-            print("✓ Using Waveshare35lcd display")
-            return Waveshare35lcd(config)
-        elif display_type == "spotpear24inch":
-            print("✓ Using Spotpear24inch display")
-            return Spotpear24inch(config)
         else:
             print(f"❌ Unknown display type '{display_type}', falling back to mock")
 
@@ -149,6 +71,14 @@ class MockDisplay(DisplayBase):
         super().__init__()
         self.name = "mock"
         logging.info("Using mock display - no hardware output")
+
+    def initialize(self):
+        """Mock initialize - no hardware to set up"""
+        pass
+
+    def render(self, canvas):
+        """Mock render - log that an update would happen"""
+        logging.info("Mock display: image updated")
 
     def display_partial(self, image_buffer):
         logging.info("Mock display: image updated")

@@ -56,13 +56,25 @@ class Waveshare213V4(DisplayImpl):
     def initialize(self):
         logging.info("initializing waveshare 2.13in v4 display")
         try:
+            # Try to import the EPD module - this may fail on non-Pi systems
             from raspi.ui.hw.libs.waveshare.epd2in13_V4 import EPD
 
             self._display = EPD()
             self._display.init()
             self._display.Clear()
+            logging.info("✓ Waveshare 2.13in v4 display initialized successfully")
+        except ImportError as e:
+            logging.error(
+                f"Cannot import Waveshare EPD module (missing Pi libraries): {e}"
+            )
+            logging.warning("This is normal when running on non-Pi systems")
+            self._display = None
         except Exception as e:
             logging.error(f"Failed to initialize Waveshare hardware: {e}")
+            if "cannot open resource" in str(e):
+                logging.warning(
+                    "Hardware resources not available (SPI/GPIO not accessible)"
+                )
             self._display = None
 
     def render(self, canvas):
