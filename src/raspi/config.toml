@@ -17,7 +17,7 @@ flight_display_duration = 5
 # Display configuration (pwnagotchi style)
 [ui.display]
 enabled = true
-type = "waveshare213inb_v4"
+type = "waveshare213in_v4"
 rotation = 180
 color = "black"
 

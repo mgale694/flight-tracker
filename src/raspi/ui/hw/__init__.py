@@ -18,6 +18,7 @@ try:
     from .waveshare154inch import Waveshare154inch
     from .waveshare213d import Waveshare213d
     from .waveshare213bc import Waveshare213bc
+    from .waveshare213in_v4 import Waveshare213V4
     from .waveshare213inb_v4 import Waveshare213bV4
     from .waveshare35lcd import Waveshare35lcd
     from .spotpear24inch import Spotpear24inch
@@ -98,6 +99,9 @@ def display_for(config):
         elif display_type == "waveshare213bc":
             print("✓ Using Waveshare213bc display")
             return Waveshare213bc(config)
+        elif display_type in ["waveshare213in_v4", "waveshare2in13v4"]:
+            print("✓ Using Waveshare213V4 display (waveshare213in_v4/waveshare2in13v4)")
+            return Waveshare213V4(config)
         elif display_type in ["waveshare213inb_v4", "waveshare2in13v4"]:
             print(
                 "✓ Using Waveshare213bV4 display (waveshare213inb_v4/waveshare2in13v4)"

@@ -36,7 +36,7 @@ def get_default_dev_config():
             "max_flights": 3,  # Fewer flights for dev
             "max_elapsed_time": 180,  # 3 minutes for dev
         },
-        "display": {"enabled": True, "type": "waveshare213inb_v4", "rotation": 180},
+        "display": {"enabled": True, "type": "waveshare213in_v4", "rotation": 180},
         "development": {
             "enabled": True,
         },

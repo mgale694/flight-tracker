@@ -149,16 +149,55 @@ class FlightAgent:
                         self.voice.on_flight_detected(detailed_flight.callsign)
                     )
 
+                    # Rich terminal logging for new flight
+                    self._log_flight_details(detailed_flight)
+
                     # Update display with flight info
                     if self.display.is_enabled():
                         updated_stats = self.tracker.get_session_stats()
                         self.display.render_flight(detailed_flight, updated_stats)
+                        print(
+                            f"🖥️  Flight {detailed_flight.callsign} displayed on screen"
+                        )
 
             time.sleep(2)
 
         # Session complete
         stats = self.tracker.get_session_stats()
         logging.info(self.voice.on_session_complete(stats["flights_count"]))
+
+    def _log_flight_details(self, flight):
+        """Log rich flight details to terminal"""
+        print("\n" + "=" * 60)
+        print("✈️  NEW FLIGHT DETECTED")
+        print("=" * 60)
+        print(f"🏷️  Callsign:     {flight.callsign}")
+        print(f"🏢  Airline:      {getattr(flight, 'airline_name', 'Unknown')}")
+        print(f"✈️  Aircraft:     {getattr(flight, 'aircraft_model', 'Unknown')}")
+        print(f"🔖  Registration: {getattr(flight, 'registration', 'Unknown')}")
+
+        # Route information
+        origin = getattr(flight, "origin_airport_name", "Unknown")
+        dest = getattr(flight, "destination_airport_name", "Unknown")
+        origin_code = getattr(flight, "origin_airport_iata", "N/A")
+        dest_code = getattr(flight, "destination_airport_iata", "N/A")
+
+        print(f"🛫  From:         {origin} ({origin_code})")
+        print(f"🛬  To:           {dest} ({dest_code})")
+
+        # Flight data
+        altitude = getattr(flight, "altitude", "Unknown")
+        speed = getattr(flight, "ground_speed", "Unknown")
+
+        print(f"📏  Altitude:     {altitude} ft")
+        print(f"🚀  Speed:        {speed} km/h")
+
+        # Position
+        if hasattr(flight, "latitude") and hasattr(flight, "longitude"):
+            print(f"📍  Position:     {flight.latitude:.4f}, {flight.longitude:.4f}")
+
+        print("=" * 60)
+        print()
 
     def _shutdown(self):
         """Clean shutdown"""
