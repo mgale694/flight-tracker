@@ -302,6 +302,83 @@ async def websocket_endpoint(websocket: WebSocket):
             websocket_connections.remove(websocket)
 
 
+@app.get("/demo/flight")
+async def get_demo_flight():
+    """Get a demo flight for testing the display"""
+    import random
+
+    # Mock flight data for testing
+    demo_flights = [
+        {
+            "callsign": "BA123",
+            "id": "demo1",
+            "latitude": 51.4748,
+            "longitude": -0.1879,
+            "altitude": "35000",
+            "ground_speed": "485",
+            "origin_airport_name": "London Heathrow Airport",
+            "destination_airport_name": "John F Kennedy International Airport",
+            "origin_airport_iata": "LHR",
+            "destination_airport_iata": "JFK",
+            "airline_name": "British Airways",
+            "aircraft_model": "Boeing 777-300ER",
+            "registration": "G-STBF",
+        },
+        {
+            "callsign": "VS401",
+            "id": "demo2",
+            "latitude": 51.4755,
+            "longitude": -0.1885,
+            "altitude": "28000",
+            "ground_speed": "420",
+            "origin_airport_name": "Manchester Airport",
+            "destination_airport_name": "Los Angeles International Airport",
+            "origin_airport_iata": "MAN",
+            "destination_airport_iata": "LAX",
+            "airline_name": "Virgin Atlantic",
+            "aircraft_model": "Airbus A350-1000",
+            "registration": "G-VNEW",
+        },
+        {
+            "callsign": "EZY456",
+            "id": "demo3",
+            "latitude": 51.4742,
+            "longitude": -0.1872,
+            "altitude": "22000",
+            "ground_speed": "380",
+            "origin_airport_name": "Paris Charles de Gaulle Airport",
+            "destination_airport_name": "Edinburgh Airport",
+            "origin_airport_iata": "CDG",
+            "destination_airport_iata": "EDI",
+            "airline_name": "easyJet",
+            "aircraft_model": "Airbus A320-214",
+            "registration": "G-EZWB",
+        },
+    ]
+
+    selected_flight = random.choice(demo_flights)
+    mock_stats = {
+        "flights_count": random.randint(1, 5),
+        "elapsed_time": random.randint(60, 300),
+        "elapsed_str": f"00:{random.randint(1, 5):02d}:{random.randint(10, 59):02d}",
+        "location_short": "Maltings Place, United Kingdom",
+    }
+
+    # If tracking is active, broadcast this as a new flight
+    if tracking_active:
+        await broadcast_to_websockets(
+            {
+                "type": "new_flight",
+                "flight": selected_flight,
+                "stats": mock_stats,
+                "message": f"Found {selected_flight['callsign']} overhead!",
+                "timestamp": time.strftime("%H:%M:%S"),
+            }
+        )
+
+    return {"flight": selected_flight, "stats": mock_stats}
+
+
 if __name__ == "__main__":
     import uvicorn
 

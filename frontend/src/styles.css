@@ -291,6 +291,20 @@ body {
   background-color: #c82333;
 }
 
+.demo-button {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.demo-button:hover:not(:disabled) {
+  background-color: #138496;
+}
+
+.demo-controls {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
 .control-button:disabled {
   background-color: #6c757d;
   cursor: not-allowed;

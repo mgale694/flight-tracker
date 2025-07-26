@@ -130,6 +130,21 @@ export const Tracker: React.FC = () => {
     }
   };
 
+  const triggerDemoFlight = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/demo/flight');
+      const data = await response.json();
+      if (data.flight && data.stats) {
+        setCurrentFlight(data.flight);
+        setStats(data.stats);
+        addLog(`✈️ Demo flight: ${data.flight.callsign}`);
+      }
+    } catch (error) {
+      console.error('Error triggering demo flight:', error);
+      addLog('Error triggering demo flight');
+    }
+  };
+
   const renderDisplay = () => {
     if (isBooting && bootData) {
       return (
@@ -187,6 +202,16 @@ export const Tracker: React.FC = () => {
               Stop Tracking
             </button>
           )}
+        </div>
+
+        <div className="demo-controls">
+          <button 
+            onClick={triggerDemoFlight} 
+            className="control-button demo-button"
+            disabled={isBooting}
+          >
+            Trigger Demo Flight
+          </button>
         </div>
 
         {stats && (
