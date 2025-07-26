@@ -1,5 +1,81 @@
 # Flight Tracker Application
 
+This project is a flight tracking system that runs on Raspberry Pi with an e-ink display, and includes a web-based interface for development and remote monitoring.
+
+## Project Components
+
+### Raspberry Pi Flight Tracker (`raspi/`)
+
+The core flight tracking system designed to run on Raspberry Pi with an e-ink display. Features:
+
+- Real-time flight tracking using FlightRadar24 API
+- E-ink display with boot sequence and flight information
+- Voice feedback and logging
+- Configurable search radius and location
+
+### FastAPI Backend (`backend/`)
+
+A web API that replicates the flight tracking functionality for web access:
+
+- RESTful API endpoints for flight data
+- WebSocket support for real-time updates
+- Configuration management
+- Boot sequence simulation
+
+### React Frontend (`frontend/`)
+
+A TypeScript React application that emulates the Raspberry Pi display:
+
+- Accurate e-ink display simulation (250x122 pixels)
+- Real-time flight tracking interface
+- Settings page for configuration
+- WebSocket integration for live updates
+
+### Streamlit Proof of Concept (`streamlit_frontend/`)
+
+Initial proof of concept interface (can be ignored for main development)
+
+## Quick Start
+
+### Development Environment
+
+Use the provided startup script to run both backend and frontend:
+
+```bash
+./start-dev.sh
+```
+
+This will start:
+
+- FastAPI backend on http://localhost:8000
+- React frontend on http://localhost:5173
+
+### Manual Setup
+
+#### Backend
+
+```bash
+cd backend
+pip install -r requirements.txt
+python main.py
+```
+
+#### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+#### Raspberry Pi
+
+```bash
+python raspi_main.py
+```
+
+# Flight Tracker Application
+
 This project is a Streamlit application that allows users to track flights based on their selected direction. The application fetches flight data and displays relevant information about flights overhead in real-time.
 
 ## Project Structure

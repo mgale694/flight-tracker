@@ -1,0 +1,139 @@
+/* E-ink display styling to match Raspberry Pi display */
+.raspi-display {
+  width: 250px;
+  height: 122px;
+  background: #ffffff;
+  border: 3px solid #000000;
+  border-radius: 8px;
+  margin: 20px auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.display-screen {
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  position: relative;
+}
+
+.display-content {
+  width: 100%;
+  height: 100%;
+  font-family: "Courier New", monospace;
+  color: #000000;
+  font-size: 10px;
+  line-height: 1.2;
+  position: relative;
+}
+
+/* Boot Screen Styling */
+.boot-content {
+  padding: 5px;
+  height: 100%;
+  position: relative;
+}
+
+.top-line {
+  position: absolute;
+  top: 15px;
+  left: -5px;
+  right: -5px;
+  height: 1px;
+  background: #000000;
+}
+
+.phrase {
+  position: absolute;
+  top: 20px;
+  left: 5px;
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.face {
+  position: absolute;
+  top: 52px;
+  left: 5px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.bottom-line {
+  position: absolute;
+  bottom: 15px;
+  left: -5px;
+  right: -5px;
+  height: 1px;
+  background: #000000;
+}
+
+.timestamp {
+  position: absolute;
+  bottom: 2px;
+  right: 5px;
+  font-size: 8px;
+}
+
+/* Flight Screen Styling */
+.flight-content {
+  padding: 2px 5px;
+  height: 100%;
+  position: relative;
+}
+
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  margin-bottom: 2px;
+}
+
+.callsign,
+.count,
+.timer {
+  font-size: 8px;
+}
+
+.flight-details {
+  margin: 16px 0;
+  padding: 0;
+}
+
+.detail-line {
+  font-size: 12px;
+  line-height: 1.3;
+  margin: 0;
+  padding: 0;
+}
+
+.bottom-row {
+  position: absolute;
+  bottom: 2px;
+  left: 5px;
+  right: 5px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+}
+
+.altitude,
+.speed {
+  font-size: 8px;
+}
+
+/* Responsive scaling for larger screens */
+@media (min-width: 768px) {
+  .raspi-display {
+    transform: scale(2);
+    margin: 40px auto 80px auto;
+  }
+}
+
+@media (min-width: 1200px) {
+  .raspi-display {
+    transform: scale(3);
+    margin: 60px auto 120px auto;
+  }
+}
