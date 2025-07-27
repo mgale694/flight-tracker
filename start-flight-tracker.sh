@@ -78,6 +78,17 @@ kill_by_pidfile() {
 setup_dependencies() {
     print_status "Setting up Flight Tracker dependencies..."
     
+    # Optimize for Raspberry Pi memory constraints
+    print_status "Configuring memory settings for Raspberry Pi..."
+    export NODE_OPTIONS="--max-old-space-size=1024"
+    
+    # Increase swap if available (helps with npm install)
+    if command -v free &> /dev/null; then
+        local mem_info=$(free -m)
+        print_status "Current memory status:"
+        echo "$mem_info"
+    fi
+    
     # Check system prerequisites
     print_status "Checking system prerequisites..."
     
@@ -164,9 +175,16 @@ setup_dependencies() {
     fi
     
     print_status "Installing minimal Node.js dependencies..."
-    if ! npm install; then
+    # Set Node.js memory limit for Raspberry Pi
+    export NODE_OPTIONS="--max-old-space-size=1024"
+    if ! npm install --no-optional --production; then
         print_error "Failed to install Node.js dependencies"
-        exit 1
+        print_status "Trying with reduced memory settings..."
+        export NODE_OPTIONS="--max-old-space-size=512"
+        if ! npm install --no-optional --production --prefer-offline; then
+            print_error "Failed to install Node.js dependencies even with reduced settings"
+            exit 1
+        fi
     fi
     
     print_success "All dependencies installed successfully!"
@@ -354,7 +372,13 @@ start_frontend() {
     # Install dependencies if node_modules doesn't exist
     if [ ! -d "node_modules" ]; then
         print_status "Installing frontend dependencies..."
-        npm install
+        # Set Node.js memory limit for Raspberry Pi
+        export NODE_OPTIONS="--max-old-space-size=1024"
+        if ! npm install --no-optional --production; then
+            print_warning "Failed with normal settings, trying reduced memory..."
+            export NODE_OPTIONS="--max-old-space-size=512"
+            npm install --no-optional --production --prefer-offline
+        fi
     fi
     
     # Update API base URL in frontend to use network-accessible backend
