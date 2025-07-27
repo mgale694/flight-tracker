@@ -211,25 +211,58 @@ start_backend() {
     fi
     
     # Start backend in background
+    print_status "Starting backend process..."
     nohup ./venv/bin/python main.py --host $BACKEND_HOST --port $BACKEND_PORT > /tmp/flight_tracker_backend.log 2>&1 &
-    echo $! > "$PIDS_DIR/backend.pid"
+    local backend_pid=$!
+    echo $backend_pid > "$PIDS_DIR/backend.pid"
     
-    # Wait for backend to start
-    print_status "Waiting for backend to start..."
+    # Give the process a moment to start
+    sleep 2
+    
+    # Check if the process is still running
+    if ! kill -0 $backend_pid 2>/dev/null; then
+        print_error "Backend process crashed immediately. Log output:"
+        echo "----------------------------------------"
+        cat /tmp/flight_tracker_backend.log
+        echo "----------------------------------------"
+        exit 1
+    fi
+    
+    # Wait for backend to start responding
+    print_status "Waiting for backend to start responding..."
     local attempts=0
     local max_attempts=30
     
     while [ $attempts -lt $max_attempts ]; do
+        # Check if process is still running
+        if ! kill -0 $backend_pid 2>/dev/null; then
+            print_error "Backend process died during startup. Log output:"
+            echo "----------------------------------------"
+            cat /tmp/flight_tracker_backend.log
+            echo "----------------------------------------"
+            exit 1
+        fi
+        
+        # Check if backend is responding
         if curl -s http://localhost:$BACKEND_PORT/health > /dev/null 2>&1; then
             print_success "Backend started successfully on http://$BACKEND_HOST:$BACKEND_PORT"
             return 0
         fi
+        
         sleep 1
         ((attempts++))
+        
+        # Show progress every 5 seconds
+        if [ $((attempts % 5)) -eq 0 ]; then
+            print_status "Still waiting for backend... (${attempts}/${max_attempts})"
+        fi
     done
     
-    print_error "Backend failed to start after $max_attempts seconds"
+    print_error "Backend failed to start responding after $max_attempts seconds"
+    print_status "Backend log output:"
+    echo "----------------------------------------"
     cat /tmp/flight_tracker_backend.log
+    echo "----------------------------------------"
     exit 1
 }
 
@@ -375,11 +408,17 @@ show_help() {
     echo "  status     Show status of all services"
     echo "  test       Test the raspi client"
     echo "  logs       Show recent logs"
+    echo "  debug      Show detailed backend debug information"
+    echo "  reset      Remove all installed dependencies and reset environment"
     echo "  help       Show this help message"
     echo
     echo "First Time Setup:"
     echo "  1. Run: $0 setup"
     echo "  2. Run: $0 start"
+    echo
+    echo "Troubleshooting:"
+    echo "  If you encounter issues, try: $0 reset"
+    echo "  Then run setup and start again"
     echo
     echo "Network Access:"
     echo "  Services will be accessible from other machines on the network"
@@ -409,6 +448,144 @@ show_logs() {
     else
         echo "No frontend logs found"
     fi
+}
+
+# Function to show debug information
+show_debug() {
+    print_status "=== BACKEND DEBUG INFORMATION ==="
+    echo
+    
+    print_status "Backend Directory Check:"
+    if [ -d "$BACKEND_DIR" ]; then
+        echo "✓ Backend directory exists: $BACKEND_DIR"
+        ls -la "$BACKEND_DIR"
+    else
+        echo "✗ Backend directory not found: $BACKEND_DIR"
+        return 1
+    fi
+    
+    echo
+    print_status "Python Environment Check:"
+    cd "$BACKEND_DIR"
+    if [ -d "venv" ]; then
+        echo "✓ Virtual environment exists"
+        source venv/bin/activate
+        echo "Python version: $(python --version)"
+        echo "Python path: $(which python)"
+        if [ -f "requirements.txt" ]; then
+            echo "Checking installed packages against requirements:"
+            pip check
+        fi
+    else
+        echo "✗ Virtual environment not found"
+    fi
+    
+    echo
+    print_status "Configuration Check:"
+    if [ -f "config.toml" ]; then
+        echo "✓ Config file exists"
+        echo "Config contents:"
+        cat config.toml
+    else
+        echo "✗ Config file not found"
+    fi
+    
+    echo
+    print_status "Network Check:"
+    echo "Backend host: $BACKEND_HOST"
+    echo "Backend port: $BACKEND_PORT"
+    if check_port $BACKEND_PORT; then
+        echo "⚠ Port $BACKEND_PORT is already in use"
+        echo "Processes using port $BACKEND_PORT:"
+        lsof -i :$BACKEND_PORT || echo "Unable to check processes (lsof not available)"
+    else
+        echo "✓ Port $BACKEND_PORT is available"
+    fi
+    
+    echo
+    print_status "Recent Backend Logs:"
+    if [ -f "/tmp/flight_tracker_backend.log" ]; then
+        echo "Last 50 lines of backend log:"
+        echo "----------------------------------------"
+        tail -50 /tmp/flight_tracker_backend.log
+        echo "----------------------------------------"
+    else
+        echo "No backend logs found"
+    fi
+    
+    echo
+    print_status "Manual Test Command:"
+    echo "To manually test the backend, run:"
+    echo "cd $BACKEND_DIR"
+    echo "source venv/bin/activate"
+    echo "python main.py --host $BACKEND_HOST --port $BACKEND_PORT"
+}
+
+# Function to reset environment
+reset_environment() {
+    print_status "=== RESETTING FLIGHT TRACKER ENVIRONMENT ==="
+    echo
+    print_warning "This will remove all installed dependencies and reset the environment."
+    print_warning "You will need to run 'setup' again before using the Flight Tracker."
+    echo
+    
+    # Ask for confirmation
+    read -p "Are you sure you want to reset the environment? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        print_status "Reset cancelled."
+        return 0
+    fi
+    
+    # Stop all services first
+    print_status "Stopping all services..."
+    stop_all
+    
+    # Remove backend virtual environment
+    print_status "Removing backend Python virtual environment..."
+    if [ -d "$BACKEND_DIR/venv" ]; then
+        rm -rf "$BACKEND_DIR/venv"
+        print_success "✓ Backend virtual environment removed"
+    else
+        echo "  No backend virtual environment found"
+    fi
+    
+    # Remove frontend node_modules
+    print_status "Removing frontend Node.js dependencies..."
+    if [ -d "$FRONTEND_DIR/node_modules" ]; then
+        rm -rf "$FRONTEND_DIR/node_modules"
+        print_success "✓ Frontend node_modules removed"
+    else
+        echo "  No frontend node_modules found"
+    fi
+    
+    # Remove package-lock.json
+    if [ -f "$FRONTEND_DIR/package-lock.json" ]; then
+        rm -f "$FRONTEND_DIR/package-lock.json"
+        print_success "✓ Frontend package-lock.json removed"
+    fi
+    
+    # Remove log files
+    print_status "Cleaning up log files..."
+    rm -f /tmp/flight_tracker_backend.log
+    rm -f /tmp/flight_tracker_frontend.log
+    print_success "✓ Log files cleaned"
+    
+    # Remove PID files
+    print_status "Cleaning up PID files..."
+    rm -f "$PIDS_DIR"/*.pid
+    print_success "✓ PID files cleaned"
+    
+    # Remove any Python cache files
+    print_status "Removing Python cache files..."
+    find "$BACKEND_DIR" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+    find "$BACKEND_DIR" -name "*.pyc" -type f -delete 2>/dev/null || true
+    print_success "✓ Python cache files removed"
+    
+    echo
+    print_success "=== ENVIRONMENT RESET COMPLETE ==="
+    print_status "To reinstall dependencies, run: $0 setup"
+    print_status "To start services, run: $0 start"
 }
 
 # Main script logic
@@ -445,6 +622,12 @@ case "${1:-start}" in
         ;;
     "logs")
         show_logs
+        ;;
+    "debug")
+        show_debug
+        ;;
+    "reset")
+        reset_environment
         ;;
     "help"|"-h"|"--help")
         show_help
