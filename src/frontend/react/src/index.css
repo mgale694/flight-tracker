@@ -978,7 +978,7 @@ button:disabled,
 
 .flight-mode .flight-header {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
   font-size: 9px;
   margin-bottom: 4px;
@@ -1009,25 +1009,25 @@ button:disabled,
 .route-row {
   font-weight: bold;
   font-size: 11px;
-  text-align: center;
+  /* text-align: center; */
   margin-top: 4px;
   padding: 2px 0;
-  border-top: 1px solid #cccccc;
+  /* border-top: 1px solid #cccccc; */
   border-bottom: 1px solid #cccccc;
 }
 
 .flight-footer {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
   font-size: 9px;
+  /* text-align: center; */
 }
 
+.flight-footer .alt-info,
+.flight-footer .speed-info,
 .flight-footer .timestamp-info {
-  grid-column: 1 / -1;
-  text-align: center;
-  margin-top: 2px;
-  font-size: 8px;
+  font-size: 9px;
 }
 
 /* =============== COMMON ELEMENTS =============== */

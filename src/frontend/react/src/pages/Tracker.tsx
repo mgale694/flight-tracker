@@ -42,6 +42,9 @@ export const Tracker: React.FC = () => {
 
   const initializeTracker = async () => {
     try {
+      // Reset session timer on initialization
+      sessionStorage.setItem('flight-tracker-session-start', Date.now().toString());
+      
       // Show boot sequence
       const bootResponse = await FlightTrackerAPI.getBootData();
       setBootData(bootResponse);
@@ -66,11 +69,19 @@ export const Tracker: React.FC = () => {
       const response = await FlightTrackerAPI.getFlights();
       
       setFlights(response.flights);
+      
+      // Calculate elapsed time from start of session (more realistic)
+      const sessionStart = sessionStorage.getItem('flight-tracker-session-start');
+      const startTime = sessionStart ? parseInt(sessionStart) : Date.now();
+      if (!sessionStart) {
+        sessionStorage.setItem('flight-tracker-session-start', startTime.toString());
+      }
+      
       setStats({
         flights_count: response.flights.length,
-        elapsed_str: formatElapsedTime(Date.now() - response.timestamp)
+        elapsed_str: formatElapsedTime(Date.now() - startTime)
       });
-      setTimestamp(new Date().toLocaleString());
+      setTimestamp(new Date().toISOString());
       setIsConnected(true);
       setIsLoading(false);
 

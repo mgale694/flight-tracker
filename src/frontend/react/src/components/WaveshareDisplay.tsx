@@ -23,13 +23,46 @@ export const WaveshareDisplay: React.FC<WaveshareDisplayProps> = ({
   isBooting = false, 
   bootData 
 }) => {
+  // Format timestamp to show only time (HH:MM:SS)
+  const formatTimeOnly = (timestampStr: string) => {
+    try {
+      const date = new Date(timestampStr);
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        // If invalid, try to parse it as just time
+        if (timestampStr.includes(':')) {
+          return timestampStr.split(' ').pop() || timestampStr;
+        }
+        // Fallback to current time
+        return new Date().toLocaleTimeString('en-GB', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          second: '2-digit',
+          hour12: false 
+        });
+      }
+      return date.toLocaleTimeString('en-GB', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit',
+        hour12: false 
+      });
+    } catch {
+      // Fallback: return current time
+      return new Date().toLocaleTimeString('en-GB', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit',
+        hour12: false 
+      });
+    }
+  };
   if (isBooting && bootData) {
     return (
       <div className="waveshare-display">
         <div className="waveshare-screen boot-mode">
           <div className="display-content">
             <div className="boot-header">
-              <div className="divider-line">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
             </div>
             
             <div className="boot-body">
@@ -39,8 +72,7 @@ export const WaveshareDisplay: React.FC<WaveshareDisplayProps> = ({
             </div>
             
             <div className="boot-footer">
-              <div className="divider-line">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
-              <div className="timestamp-line">TIME: {timestamp}</div>
+              <div className="timestamp-line">TIME: {formatTimeOnly(timestamp)}</div>
             </div>
           </div>
         </div>
@@ -57,9 +89,7 @@ export const WaveshareDisplay: React.FC<WaveshareDisplayProps> = ({
               <span className="count-info">COUNT: {stats.flights_count}</span>
               <span className="timer-info">TIMER: {stats.elapsed_str}</span>
             </div>
-            
-            <div className="divider-line">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
-            
+                        
             <div className="scan-body">
               <div className="scan-status">SCANNING...</div>
               <div className="scan-subtitle">Waiting for aircraft</div>
@@ -69,12 +99,10 @@ export const WaveshareDisplay: React.FC<WaveshareDisplayProps> = ({
                 <span className="scan-dot">●</span>
               </div>
             </div>
-            
-            <div className="divider-line">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
-            
+                        
             <div className="scan-footer">
               <span className="status-info">READY</span>
-              <span className="timestamp-info">TIME: {timestamp}</span>
+              <span className="timestamp-info">TIME: {formatTimeOnly(timestamp)}</span>
             </div>
           </div>
         </div>
@@ -96,9 +124,7 @@ export const WaveshareDisplay: React.FC<WaveshareDisplayProps> = ({
             <span className="count-info">COUNT: {stats.flights_count}</span>
             <span className="timer-info">TIMER: {stats.elapsed_str}</span>
           </div>
-          
-          <div className="divider-line">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
-          
+                    
           <div className="flight-details">
             <div className="detail-row">{displayFrom}</div>
             <div className="detail-row">AIRLINE: {flight.airline_name || 'Unknown'}</div>
@@ -106,13 +132,11 @@ export const WaveshareDisplay: React.FC<WaveshareDisplayProps> = ({
             <div className="detail-row">REG: {flight.registration || 'N/A'}</div>
             <div className="detail-row route-row">{route}</div>
           </div>
-          
-          <div className="divider-line">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
-          
+                    
           <div className="flight-footer">
             <span className="alt-info">ALT: {flight.altitude || 'N/A'} ft</span>
             <span className="speed-info">SPD: {flight.ground_speed || 'N/A'} kt</span>
-            <span className="timestamp-info">TIME: {timestamp}</span>
+            <span className="timestamp-info">TIME: {formatTimeOnly(timestamp)}</span>
           </div>
         </div>
       </div>

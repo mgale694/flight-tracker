@@ -13,37 +13,60 @@ class Flight:
         # Handle both object attributes and dictionary keys
         def safe_get(obj, attr, default="Unknown"):
             if hasattr(obj, attr):
-                return getattr(obj, attr, default)
+                value = getattr(obj, attr, default)
+                return str(value) if value is not None else default
             elif isinstance(obj, dict):
-                return obj.get(attr, default)
+                value = obj.get(attr, default)
+                return str(value) if value is not None else default
             else:
                 return default
 
+        # Basic flight identification
         self.callsign = safe_get(flight_data, "callsign")
         self.id = safe_get(flight_data, "id", "")
         self.latitude = safe_get(flight_data, "latitude", 0.0)
         self.longitude = safe_get(flight_data, "longitude", 0.0)
+
+        # Flight parameters
         self.altitude = safe_get(flight_data, "altitude")
         self.ground_speed = safe_get(flight_data, "ground_speed")
 
-        # Handle airport information - might be in different fields
-        self.origin_airport_name = safe_get(
-            flight_data, "origin_airport_name"
-        ) or safe_get(flight_data, "origin", "Unknown")
-        self.destination_airport_name = safe_get(
-            flight_data, "destination_airport_name"
-        ) or safe_get(flight_data, "destination", "Unknown")
-        self.origin_airport_iata = safe_get(flight_data, "origin_airport_iata", "N/A")
-        self.destination_airport_iata = safe_get(
-            flight_data, "destination_airport_iata", "N/A"
+        # Airport information - try multiple possible attribute names
+        self.origin_airport_name = (
+            safe_get(flight_data, "origin_airport_name")
+            or safe_get(flight_data, "origin")
+            or safe_get(flight_data, "origin_name")
+            or "Unknown"
+        )
+        self.destination_airport_name = (
+            safe_get(flight_data, "destination_airport_name")
+            or safe_get(flight_data, "destination")
+            or safe_get(flight_data, "destination_name")
+            or "Unknown"
+        )
+        self.origin_airport_iata = (
+            safe_get(flight_data, "origin_airport_iata")
+            or safe_get(flight_data, "origin_iata")
+            or "N/A"
+        )
+        self.destination_airport_iata = (
+            safe_get(flight_data, "destination_airport_iata")
+            or safe_get(flight_data, "destination_iata")
+            or "N/A"
         )
 
-        # Airline and aircraft info
-        self.airline_name = safe_get(flight_data, "airline_name") or safe_get(
-            flight_data, "airline", "Unknown"
+        # Airline and aircraft info - try multiple possible attribute names
+        self.airline_name = (
+            safe_get(flight_data, "airline_name")
+            or safe_get(flight_data, "airline")
+            or safe_get(flight_data, "airline_short_name")
+            or "Unknown"
         )
-        self.aircraft_model = safe_get(flight_data, "aircraft_model") or safe_get(
-            flight_data, "aircraft", "Unknown"
+        self.aircraft_model = (
+            safe_get(flight_data, "aircraft_model")
+            or safe_get(flight_data, "aircraft")
+            or safe_get(flight_data, "aircraft_type")
+            or "Unknown"
         )
         self.registration = safe_get(flight_data, "registration")
 
@@ -119,23 +142,36 @@ class FlightTracker:
         logging.info("Flight tracking session started")
 
     def get_flights(self):
-        """Get current flights in the area"""
+        """Get current flights in the area with detailed information"""
         try:
             flights = self.fr_api.get_flights(bounds=self.bounds)
-            return [Flight(flight) for flight in flights]
+            detailed_flights = []
+
+            for flight in flights:
+                try:
+                    # Get detailed flight information like in the manual script
+                    flight_details = self.fr_api.get_flight_details(flight)
+                    flight.set_flight_details(flight_details)
+
+                    # Log detailed info for debugging
+                    logging.info(
+                        f"Flight {flight.callsign}: airline={getattr(flight, 'airline_name', 'N/A')}, "
+                        f"model={getattr(flight, 'aircraft_model', 'N/A')}, "
+                        f"registration={getattr(flight, 'registration', 'N/A')}"
+                    )
+
+                    detailed_flights.append(Flight(flight))
+                except Exception as e:
+                    logging.warning(
+                        f"Could not get details for flight {getattr(flight, 'callsign', 'Unknown')}: {e}"
+                    )
+                    # Still add the flight with basic info
+                    detailed_flights.append(Flight(flight))
+
+            return detailed_flights
         except Exception as e:
             logging.error(f"Error fetching flights: {e}")
             return []
-
-    def get_flight_details(self, flight):
-        """Get detailed information for a specific flight"""
-        try:
-            # For the web version, we'll use the existing flight data
-            # The original gets more details from the API but this should work for demo
-            return flight
-        except Exception as e:
-            logging.error(f"Error getting flight details for {flight.callsign}: {e}")
-            return flight
 
     def process_flight(self, flight):
         """Process a detected flight"""
