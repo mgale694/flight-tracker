@@ -79,17 +79,30 @@ setup_dependencies() {
     print_status "Setting up Flight Tracker dependencies..."
     
     # Check system prerequisites
+    print_status "Checking system prerequisites..."
+    
     if ! command -v python3 &> /dev/null; then
         print_error "Python3 is not installed. Please install Python3 first."
         print_status "On Raspberry Pi: sudo apt update && sudo apt install python3 python3-pip python3-venv -y"
         exit 1
     fi
     
-    if ! command -v npm &> /dev/null; then
-        print_error "npm is not installed. Please install Node.js and npm first."
-        print_status "On Raspberry Pi: curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && sudo apt-get install -y nodejs"
+    # Check if python3-venv is available
+    if ! python3 -c "import venv" 2>/dev/null; then
+        print_error "python3-venv module is not available. Please install it."
+        print_status "On Raspberry Pi: sudo apt install python3-venv"
         exit 1
     fi
+    
+    if ! command -v npm &> /dev/null; then
+        print_error "npm is not installed. Please install Node.js and npm first."
+        print_status "On Raspberry Pi: "
+        print_status "  curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -"
+        print_status "  sudo apt-get install -y nodejs"
+        exit 1
+    fi
+    
+    print_success "System prerequisites check passed!"
     
     # Setup backend dependencies
     print_status "Setting up backend dependencies..."
@@ -103,15 +116,36 @@ setup_dependencies() {
     # Create virtual environment if it doesn't exist
     if [ ! -d "venv" ]; then
         print_status "Creating Python virtual environment..."
-        python3 -m venv venv
+        if ! python3 -m venv venv; then
+            print_error "Failed to create virtual environment. Check if python3-venv is installed."
+            print_status "Try: sudo apt install python3-venv"
+            exit 1
+        fi
+    fi
+    
+    # Check if virtual environment was created successfully
+    if [ ! -f "venv/bin/activate" ]; then
+        print_error "Virtual environment creation failed or incomplete."
+        print_status "Removing incomplete venv and trying again..."
+        rm -rf venv
+        if ! python3 -m venv venv; then
+            print_error "Failed to create virtual environment on second attempt."
+            exit 1
+        fi
     fi
     
     # Activate and install dependencies
+    print_status "Activating virtual environment and installing dependencies..."
     source venv/bin/activate
     if [ -f "requirements.txt" ]; then
         print_status "Installing Python dependencies..."
-        pip install --upgrade pip
-        pip install -r requirements.txt
+        if ! pip install --upgrade pip; then
+            print_warning "Failed to upgrade pip, continuing with current version..."
+        fi
+        if ! pip install -r requirements.txt; then
+            print_error "Failed to install Python dependencies"
+            exit 1
+        fi
     fi
     
     # Setup frontend dependencies
@@ -124,7 +158,12 @@ setup_dependencies() {
     cd "$FRONTEND_DIR"
     if [ ! -d "node_modules" ] || [ ! -f "package-lock.json" ]; then
         print_status "Installing Node.js dependencies..."
-        npm install
+        if ! npm install; then
+            print_error "Failed to install Node.js dependencies"
+            exit 1
+        fi
+    else
+        print_status "Node.js dependencies already installed"
     fi
     
     print_success "All dependencies installed successfully!"
