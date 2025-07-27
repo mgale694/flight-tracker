@@ -1,8 +1,8 @@
 [main]
-address = "10 Downing Street, London, UK"
-search_radius_meters = 3000
-max_flights = 20
-max_elapsed_time = 1800
+address = "31 Maltings Place, Fulham, London, SW62BU"
+search_radius_meters = 5000
+max_flights = 25
+max_elapsed_time = 2400
 
 [ui]
 boot_screen_duration = 10

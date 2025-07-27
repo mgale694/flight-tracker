@@ -143,3 +143,39 @@ class Flight:
             for attr in dir(self)
             if not attr.startswith("_") and not callable(getattr(self, attr))
         }
+
+
+if __name__ == "__main__":
+    # Quick test of the API client
+    import logging
+
+    logging.basicConfig(level=logging.INFO)
+
+    api = SimpleFlightTrackerAPI()
+
+    print("Testing Flight Tracker API...")
+
+    # Test health check
+    try:
+        health = api.health_check()
+        print(f"✅ Health check: {health}")
+    except Exception as e:
+        print(f"❌ Health check failed: {e}")
+
+    # Test config
+    try:
+        config = api.get_config()
+        print(f"✅ Config loaded: {config['main']['address']}")
+    except Exception as e:
+        print(f"❌ Config failed: {e}")
+
+    # Test flights
+    try:
+        flights = api.get_flights()
+        print(
+            f"✅ Flights retrieved: {len(flights)} flights at {flights.get('location', 'unknown location')}"
+        )
+    except Exception as e:
+        print(f"❌ Flights failed: {e}")
+
+    print("Test complete!")

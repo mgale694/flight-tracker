@@ -1,8 +1,20 @@
-import type { FlightData, SessionStats, BootData, Config } from './types';
+import type { FlightData, Config } from './types';
 
 const API_BASE = 'http://localhost:8000';
 
 export class FlightTrackerAPI {
+  // Main endpoint - gets current flights (simplified)
+  static async getFlights(): Promise<{ 
+    flights: FlightData[]; 
+    timestamp: number; 
+    location: string; 
+  }> {
+    const response = await fetch(`${API_BASE}/flights`);
+    if (!response.ok) throw new Error('Failed to fetch flights');
+    return response.json();
+  }
+
+  // Config management
   static async getConfig(): Promise<Config> {
     const response = await fetch(`${API_BASE}/config`);
     if (!response.ok) throw new Error('Failed to fetch config');
@@ -21,56 +33,32 @@ export class FlightTrackerAPI {
     if (!response.ok) throw new Error('Failed to update config');
   }
 
-  static async getBootData(): Promise<BootData> {
-    const response = await fetch(`${API_BASE}/boot`);
-    if (!response.ok) throw new Error('Failed to fetch boot data');
-    return response.json();
-  }
-
-  static async getFlights(): Promise<{ flights: FlightData[]; stats: SessionStats | null }> {
-    const response = await fetch(`${API_BASE}/flights`);
-    if (!response.ok) throw new Error('Failed to fetch flights');
-    return response.json();
-  }
-
-  static async startSession(): Promise<void> {
-    const response = await fetch(`${API_BASE}/session/start`, {
-      method: 'POST',
-    });
-    if (!response.ok) throw new Error('Failed to start session');
-  }
-
-  static async stopSession(): Promise<void> {
-    const response = await fetch(`${API_BASE}/session/stop`, {
-      method: 'POST',
-    });
-    if (!response.ok) throw new Error('Failed to stop session');
-  }
-
-  static async getSessionStatus(): Promise<{
-    active: boolean;
-    stats: SessionStats | null;
-    should_continue: boolean;
-  }> {
-    const response = await fetch(`${API_BASE}/session/status`);
-    if (!response.ok) throw new Error('Failed to fetch session status');
-    return response.json();
-  }
-
-  static async getDemoFlight(): Promise<{ flight: FlightData; stats: SessionStats }> {
-    const response = await fetch(`${API_BASE}/demo/flight`);
-    if (!response.ok) throw new Error('Failed to fetch demo flight');
-    return response.json();
-  }
-
+  // Health check
   static async getHealth(): Promise<{
     status: string;
     timestamp: number;
     tracker_initialized: boolean;
-    session_active: boolean;
   }> {
     const response = await fetch(`${API_BASE}/health`);
     if (!response.ok) throw new Error('Failed to fetch health status');
     return response.json();
+  }
+
+  // Mock boot data for compatibility (since simplified backend doesn't have this)
+  static async getBootData(): Promise<{ face: string; phrase: string; message: string }> {
+    const faces = ["(⌐■_■)", "(╯°□°）╯", "ಠ_ಠ", "(◕‿◕)", "¯\\_(ツ)_/¯"];
+    const phrases = [
+      "Booting up flight tracker...",
+      "Scanning the skies...", 
+      "Ready for takeoff!",
+      "Aircraft detection online",
+      "Flight radar activated"
+    ];
+    
+    return {
+      face: faces[Math.floor(Math.random() * faces.length)],
+      phrase: phrases[Math.floor(Math.random() * phrases.length)],
+      message: "Flight Tracker initialized"
+    };
   }
 }
