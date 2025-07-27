@@ -157,43 +157,16 @@ setup_dependencies() {
     
     cd "$FRONTEND_DIR"
     
-    # Check system architecture for ARM-specific handling
-    local arch=$(uname -m)
-    if [[ "$arch" == "armv7l" || "$arch" == "aarch64" || "$arch" == "arm64" ]]; then
-        print_status "Detected ARM architecture ($arch) - applying compatibility fixes..."
-        
-        # Remove existing node_modules if they might be from different architecture
-        if [ -d "node_modules" ]; then
-            print_status "Removing existing node_modules for ARM compatibility..."
-            rm -rf node_modules package-lock.json
-        fi
-        
-        # Set npm configuration for ARM compatibility
-        export npm_config_target_arch=arm
-        export npm_config_target_platform=linux
-        export npm_config_cache=/tmp/.npm
-        
-        # Force rebuild of native modules
-        print_status "Installing Node.js dependencies with ARM compatibility..."
-        if ! npm install --no-optional --rebuild; then
-            print_warning "npm install with rebuild failed, trying alternative approach..."
-            
-            # Alternative: Install without optional dependencies that often cause ARM issues
-            if ! npm install --no-optional --no-audit --no-fund; then
-                print_error "Failed to install Node.js dependencies"
-                print_status "This might be due to ARM compatibility issues."
-                print_status "Try manually: cd $FRONTEND_DIR && npm install --no-optional"
-                exit 1
-            fi
-        fi
-    elif [ ! -d "node_modules" ] || [ ! -f "package-lock.json" ]; then
-        print_status "Installing Node.js dependencies..."
-        if ! npm install; then
-            print_error "Failed to install Node.js dependencies"
-            exit 1
-        fi
-    else
-        print_status "Node.js dependencies already installed"
+    # Always reinstall dependencies to ensure compatibility
+    if [ -d "node_modules" ]; then
+        print_status "Removing existing node_modules for fresh install..."
+        rm -rf node_modules package-lock.json
+    fi
+    
+    print_status "Installing minimal Node.js dependencies..."
+    if ! npm install; then
+        print_error "Failed to install Node.js dependencies"
+        exit 1
     fi
     
     print_success "All dependencies installed successfully!"
@@ -387,80 +360,18 @@ start_frontend() {
     # Update API base URL in frontend to use network-accessible backend
     print_status "Configuring frontend for network access..."
     
-    # Start frontend in background with network host
+    # Start frontend with simple TypeScript compilation + HTTP server
     print_status "Starting frontend process..."
+    nohup npm run dev > /tmp/flight_tracker_frontend.log 2>&1 &
+    local frontend_pid=$!
+    echo $frontend_pid > "$PIDS_DIR/frontend.pid"
     
-    # Check system architecture for ARM-specific handling
-    local arch=$(uname -m)
-    local start_success=false
-    
-    if [[ "$arch" == "armv7l" || "$arch" == "aarch64" || "$arch" == "arm64" ]]; then
-        print_status "Using ARM-optimized startup method..."
-        
-        # Try with Node.js memory optimization for ARM
-        export NODE_OPTIONS="--max-old-space-size=1024"
-        
-        # Try starting with Vite first
-        nohup npm run dev -- --host $FRONTEND_HOST --port $FRONTEND_PORT > /tmp/flight_tracker_frontend.log 2>&1 &
-        local frontend_pid=$!
-        echo $frontend_pid > "$PIDS_DIR/frontend.pid"
-        
-        # Give extra time for ARM startup
-        sleep 5
-        
-        # Check if Vite worked
-        if kill -0 $frontend_pid 2>/dev/null && ! grep -q "Illegal instruction" /tmp/flight_tracker_frontend.log; then
-            start_success=true
-        else
-            print_warning "Vite failed on ARM, trying alternative build method..."
-            kill $frontend_pid 2>/dev/null || true
-            
-            # Try building and serving static files instead
-            print_status "Building static files for ARM compatibility..."
-            if npm run build > /tmp/flight_tracker_build.log 2>&1; then
-                print_status "Starting static file server..."
-                # Use a simple HTTP server for the built files
-                if command -v python3 &> /dev/null; then
-                    cd dist 2>/dev/null || cd build 2>/dev/null || { print_error "Build directory not found"; exit 1; }
-                    nohup python3 -m http.server $FRONTEND_PORT --bind $FRONTEND_HOST > /tmp/flight_tracker_frontend.log 2>&1 &
-                    frontend_pid=$!
-                    echo $frontend_pid > "$PIDS_DIR/frontend.pid"
-                    start_success=true
-                    cd ..
-                elif command -v npx &> /dev/null && command -v serve &> /dev/null; then
-                    nohup npx serve -l $FRONTEND_PORT -s dist > /tmp/flight_tracker_frontend.log 2>&1 &
-                    frontend_pid=$!
-                    echo $frontend_pid > "$PIDS_DIR/frontend.pid"
-                    start_success=true
-                else
-                    print_error "Cannot start static server. Install 'serve' package: npm install -g serve"
-                    exit 1
-                fi
-            else
-                print_error "Build failed. Check build log:"
-                cat /tmp/flight_tracker_build.log
-                exit 1
-            fi
-        fi
-    else
-        # Standard startup for non-ARM systems
-        nohup npm run dev -- --host $FRONTEND_HOST --port $FRONTEND_PORT > /tmp/flight_tracker_frontend.log 2>&1 &
-        local frontend_pid=$!
-        echo $frontend_pid > "$PIDS_DIR/frontend.pid"
-        start_success=true
-    fi
-    
-    if [ "$start_success" = false ]; then
-        print_error "Failed to start frontend with any available method"
-        exit 1
-    fi
-    
-    # Give the process a moment to start
-    sleep 3
+    # Give the process time to build and start (TypeScript compilation takes time)
+    sleep 5
     
     # Check if the process is still running
     if ! kill -0 $frontend_pid 2>/dev/null; then
-        print_error "Frontend process crashed immediately. Log output:"
+        print_error "Frontend process crashed during startup. Log output:"
         echo "----------------------------------------"
         cat /tmp/flight_tracker_frontend.log
         echo "----------------------------------------"
@@ -470,7 +381,7 @@ start_frontend() {
     # Wait for frontend to start
     print_status "Waiting for frontend to start responding..."
     local attempts=0
-    local max_attempts=60  # Frontend takes longer to start than backend
+    local max_attempts=45  # TypeScript compilation + server startup
     
     while [ $attempts -lt $max_attempts ]; do
         # Check if process is still running
@@ -484,8 +395,8 @@ start_frontend() {
         
         # Check if there are any error messages in the log
         if [ -f "/tmp/flight_tracker_frontend.log" ] && [ -s "/tmp/flight_tracker_frontend.log" ]; then
-            # Check for common error patterns
-            if grep -q -i "error\|exception\|failed\|enoent\|cannot resolve\|port.*already in use" /tmp/flight_tracker_frontend.log; then
+            # Check for common error patterns (but not "Illegal instruction" since we removed Vite)
+            if grep -q -i "error.*failed\|exception\|cannot resolve\|port.*already in use\|compilation.*failed" /tmp/flight_tracker_frontend.log; then
                 print_error "Frontend encountered errors during startup. Log output:"
                 echo "----------------------------------------"
                 cat /tmp/flight_tracker_frontend.log
@@ -494,20 +405,18 @@ start_frontend() {
             fi
         fi
         
-        # Check if frontend is responding (try multiple methods)
+        # Check if frontend is responding
         local health_check_success=false
         
-        # Method 1: Try curl if available
+        # Try multiple methods to check if frontend is responding
         if command -v curl &> /dev/null; then
             if curl -s --connect-timeout 2 http://localhost:$FRONTEND_PORT > /dev/null 2>&1; then
                 health_check_success=true
             fi
-        # Method 2: Try wget if curl not available  
         elif command -v wget &> /dev/null; then
             if wget -q --timeout=2 --tries=1 -O /dev/null http://localhost:$FRONTEND_PORT 2>/dev/null; then
                 health_check_success=true
             fi
-        # Method 3: Try netcat/nc if available
         elif command -v nc &> /dev/null; then
             if echo "" | nc -w 2 localhost $FRONTEND_PORT > /dev/null 2>&1; then
                 health_check_success=true
@@ -522,7 +431,7 @@ start_frontend() {
         sleep 1
         ((attempts++))
         
-        # Show progress every 10 seconds with more detail for frontend (it's slower)
+        # Show progress every 10 seconds
         if [ $((attempts % 10)) -eq 0 ]; then
             print_status "Still waiting for frontend... (${attempts}/${max_attempts})"
             if [ -f "/tmp/flight_tracker_frontend.log" ]; then
@@ -650,7 +559,6 @@ show_help() {
     echo "  debug      Show detailed backend debug information"
     echo "  quick-debug Run a quick backend test and show immediate results"
     echo "  frontend-debug Run a quick frontend test and show immediate results"
-    echo "  arm-fix    Fix ARM/Raspberry Pi compatibility issues"
     echo "  reset      Remove all installed dependencies and reset environment"
     echo "  help       Show this help message"
     echo
@@ -860,8 +768,8 @@ frontend_debug() {
         grep -A 2 -B 2 '"dev"' package.json || echo "No dev script found"
     fi
     
-    # Try to run the frontend for 15 seconds and capture output
-    timeout 15 npm run dev -- --host $FRONTEND_HOST --port $FRONTEND_PORT 2>&1 | tee /tmp/frontend_quick_debug.log &
+    # Try to run the frontend for 20 seconds and capture output
+    timeout 20 npm run dev 2>&1 | tee /tmp/frontend_quick_debug.log &
     local test_pid=$!
     
     sleep 5
@@ -902,95 +810,6 @@ frontend_debug() {
     
     # Clean up
     rm -f /tmp/frontend_quick_debug.log
-}
-
-# Function to fix ARM/Raspberry Pi compatibility issues
-arm_fix() {
-    print_status "=== ARM/RASPBERRY PI COMPATIBILITY FIX ==="
-    echo
-    
-    local arch=$(uname -m)
-    print_status "Detected architecture: $arch"
-    
-    if [[ "$arch" != "armv7l" && "$arch" != "aarch64" && "$arch" != "arm64" ]]; then
-        print_warning "This system doesn't appear to be ARM-based."
-        print_status "ARM fix is designed for Raspberry Pi and other ARM systems."
-        read -p "Continue anyway? (y/N): " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            return 0
-        fi
-    fi
-    
-    print_status "Stopping any running services..."
-    stop_all
-    
-    # Fix Node.js dependencies
-    print_status "Fixing Node.js dependencies for ARM..."
-    if [ -d "$FRONTEND_DIR" ]; then
-        cd "$FRONTEND_DIR"
-        
-        print_status "Removing potentially incompatible node_modules..."
-        rm -rf node_modules package-lock.json
-        
-        print_status "Setting ARM-compatible npm configuration..."
-        npm config set target_arch arm
-        npm config set target_platform linux
-        npm config set cache /tmp/.npm --global
-        
-        # Install global serve package for fallback
-        print_status "Installing static server fallback..."
-        npm install -g serve 2>/dev/null || print_warning "Could not install serve globally"
-        
-        print_status "Reinstalling dependencies with ARM optimizations..."
-        export NODE_OPTIONS="--max-old-space-size=1024"
-        export npm_config_target_arch=arm
-        export npm_config_target_platform=linux
-        
-        if npm install --no-optional --rebuild; then
-            print_success "✓ Node.js dependencies reinstalled successfully"
-        else
-            print_error "Failed to reinstall Node.js dependencies"
-            print_status "You may need to:"
-            print_status "1. Update Node.js to a version with better ARM support"
-            print_status "2. Install build essentials: sudo apt install build-essential"
-            print_status "3. Try using the static build fallback"
-            return 1
-        fi
-        
-        # Test if Vite works
-        print_status "Testing Vite compatibility..."
-        timeout 10 npx vite --version > /tmp/vite_test.log 2>&1
-        if grep -q "Illegal instruction" /tmp/vite_test.log; then
-            print_warning "Vite has ARM compatibility issues"
-            print_status "The system will automatically use static build fallback"
-        else
-            print_success "✓ Vite appears to work on this ARM system"
-        fi
-        rm -f /tmp/vite_test.log
-    fi
-    
-    # Check Node.js version compatibility
-    print_status "Checking Node.js version..."
-    local node_version=$(node --version 2>/dev/null || echo "Not found")
-    echo "Node.js version: $node_version"
-    
-    # Recommend specific Node.js versions for ARM
-    if [[ "$node_version" =~ ^v([0-9]+) ]]; then
-        local major_version=${BASH_REMATCH[1]}
-        if [ "$major_version" -lt 16 ]; then
-            print_warning "Node.js version may be too old for Vite"
-            print_status "Consider upgrading to Node.js 16+ for better ARM support"
-        elif [ "$major_version" -gt 20 ]; then
-            print_warning "Very new Node.js version - if you have issues, try Node.js 18 LTS"
-        else
-            print_success "✓ Node.js version looks good for ARM"
-        fi
-    fi
-    
-    print_success "=== ARM COMPATIBILITY FIX COMPLETE ==="
-    print_status "Try starting the system: $0 start"
-    print_status "If Vite still fails, the system will automatically use static build mode"
 }
 
 # Function to reset environment
@@ -1103,9 +922,6 @@ case "${1:-start}" in
         ;;
     "frontend-debug")
         frontend_debug
-        ;;
-    "arm-fix")
-        arm_fix
         ;;
     "reset")
         reset_environment
