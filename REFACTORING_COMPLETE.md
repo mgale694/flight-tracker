@@ -4,6 +4,8 @@
 
 Successfully refactored the flight tracking application from a WebSocket-based architecture to a simple polling-based REST API architecture. The system now operates with a lightweight FastAPI backend that serves flight data to both a React frontend and Raspberry Pi clients via HTTP polling.
 
+**NEW**: Added comprehensive startup scripts for easy deployment and network access! 🚀
+
 ## Architecture Changes
 
 ### Before (WebSocket-based)
@@ -98,6 +100,53 @@ Successfully refactored the flight tracking application from a WebSocket-based a
 ✅ Flights retrieved: 3 flights at 31 Maltings Place, Fulham, London, SW62BU
 ```
 
+### ✅ Startup Scripts (NEW!)
+
+**Files**:
+
+- `start-flight-tracker.sh` (main startup script)
+- `run-raspi-client.sh` (raspi client runner)
+- `STARTUP_SCRIPTS.md` (documentation)
+
+**Status**: **COMPLETE & TESTED**
+
+**Features**:
+
+- One-command startup for complete system
+- Network hosting for external access (--host 0.0.0.0)
+- Automatic port conflict detection and resolution
+- PID file management for clean shutdowns
+- Health checks and status monitoring
+- Colored output and comprehensive logging
+- Dedicated raspi client runner with polling modes
+
+**Usage**:
+
+```bash
+# Start complete system with network access
+./start-flight-tracker.sh start
+
+# Check status and get network URLs
+./start-flight-tracker.sh status
+
+# Test raspi client against remote backend
+./run-raspi-client.sh -u http://192.168.0.102:8000 test
+
+# Start continuous polling from raspi
+./run-raspi-client.sh -u http://192.168.0.102:8000 poll
+```
+
+**Test Results**:
+
+```bash
+✅ Backend: Running on http://0.0.0.0:8000 (Network accessible)
+✅ Frontend: Running on http://0.0.0.0:5173 (Network accessible)
+✅ Raspi Client: Successfully tested against remote backend
+✅ Network URLs: http://192.168.0.102:8000 (backend), http://192.168.0.102:5173 (frontend)
+✅ Polling Mode: Real-time flight data streaming tested
+✅ Health Checks: All endpoints responding correctly
+```
+
 ## Configuration Management
 
 ### Centralized Config (`src/backend/config.toml`)
@@ -131,28 +180,50 @@ backend_url = "http://localhost:8000"
 
 ## Running the System
 
-### 1. Start Backend
+### NEW: Easy Startup with Scripts 🚀
+
+**Start Everything:**
+
+```bash
+./start-flight-tracker.sh start
+```
+
+**Check Status:**
+
+```bash
+./start-flight-tracker.sh status
+```
+
+**Run Raspi Client:**
+
+```bash
+./run-raspi-client.sh -u http://192.168.0.102:8000 poll
+```
+
+### Manual Startup (Legacy)
+
+#### 1. Start Backend
 
 ```bash
 cd /Users/mgale/dev/mgale694/flight-tracker/src/backend
-python main.py
-# Backend available at http://localhost:8000
+python main.py --host 0.0.0.0 --port 8000
+# Backend available at http://0.0.0.0:8000
 ```
 
-### 2. Start React Frontend
+#### 2. Start React Frontend
 
 ```bash
 cd /Users/mgale/dev/mgale694/flight-tracker/src/frontend/react
-npm run dev
-# Frontend available at http://localhost:5173
+npm run dev -- --host 0.0.0.0 --port 5173
+# Frontend available at http://0.0.0.0:5173
 ```
 
-### 3. Use Raspberry Pi Client
+#### 3. Use Raspberry Pi Client
 
 ```python
 from src.raspi.api_simple import SimpleFlightTrackerAPI
 
-api = SimpleFlightTrackerAPI("http://localhost:8000")
+api = SimpleFlightTrackerAPI("http://192.168.0.102:8000")
 flights = api.get_flights()
 config = api.get_config()
 ```
@@ -165,12 +236,45 @@ config = api.get_config()
 4. **Maintainability**: Clear separation of concerns between components
 5. **Debuggability**: Standard HTTP requests are easier to monitor and debug
 6. **Configuration**: Centralized config management with remote updates
+7. **🆕 Network Access**: Full network hosting for multi-device access
+8. **🆕 Easy Deployment**: One-command startup and management scripts
+
+## 🚀 NEW: Startup Scripts Features
+
+### Main Features Added:
+
+- **Automated Startup**: Single command starts entire system
+- **Network Hosting**: Services accessible from other machines (--host 0.0.0.0)
+- **Port Management**: Automatic conflict detection and resolution
+- **Health Monitoring**: Real-time service status and health checks
+- **PID Management**: Clean process management and shutdown
+- **Raspi Integration**: Dedicated client runner for remote devices
+- **Comprehensive Logging**: Detailed logs for troubleshooting
+
+### Script Commands:
+
+```bash
+# Main system management
+./start-flight-tracker.sh [start|stop|restart|status|test|logs|help]
+
+# Raspi client management
+./run-raspi-client.sh [test|poll|config|health|help] [-u URL] [-i INTERVAL]
+```
+
+### Network URLs:
+
+When running, services are accessible at:
+
+- **Backend**: `http://YOUR_IP:8000` (API endpoints)
+- **Frontend**: `http://YOUR_IP:5173` (Web interface)
+- **Mobile**: Works on phones/tablets via network URL
 
 ## Documentation Created
 
 - `docs/POLLING_GUIDE.md` - Comprehensive polling implementation guide
 - `test_polling.py` - Python demo script for backend polling
 - `REFACTORING_COMPLETE.md` - This summary document
+- `STARTUP_SCRIPTS.md` - Documentation for new startup scripts
 
 ## Verified Integrations
 
@@ -179,6 +283,7 @@ config = api.get_config()
 ✅ **Configuration Management**: Updates propagate correctly across all components
 ✅ **Error Handling**: Graceful degradation when backend unavailable
 ✅ **TypeScript**: All types properly defined and no compilation errors
+✅ **Startup Scripts**: Complete system startup and raspi client runner tested
 
 ## Development Workflow
 
@@ -188,6 +293,7 @@ The system now supports a clean development workflow:
 2. **Frontend Development**: React hot-reloading with live backend data
 3. **Raspi Development**: Use `api_simple.py` for integration testing
 4. **Configuration Changes**: Update via frontend Settings page or direct API calls
+5. **Startup Scripts**: Use `start-flight-tracker.sh` for easy deployment
 
 ## Performance Characteristics
 

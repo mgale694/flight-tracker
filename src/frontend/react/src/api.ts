@@ -1,6 +1,7 @@
 import type { FlightData, Config } from './types';
 
-const API_BASE = 'http://localhost:8000';
+// Use environment variable for API base URL, fallback to localhost
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 export class FlightTrackerAPI {
   // Main endpoint - gets current flights (simplified)
