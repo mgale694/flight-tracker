@@ -207,7 +207,7 @@ start_backend() {
     # Install/update dependencies if requirements.txt exists
     if [ -f "requirements.txt" ]; then
         print_status "Installing/updating backend dependencies..."
-        pip install -r requirements.txt
+        pip install -q -r requirements.txt
     fi
     
     # Start backend in background
@@ -243,8 +243,39 @@ start_backend() {
             exit 1
         fi
         
-        # Check if backend is responding
-        if curl -s http://localhost:$BACKEND_PORT/health > /dev/null 2>&1; then
+        # Check if there are any error messages in the log
+        if [ -f "/tmp/flight_tracker_backend.log" ] && [ -s "/tmp/flight_tracker_backend.log" ]; then
+            # Check for common error patterns
+            if grep -q -i "error\|exception\|traceback\|failed\|could not" /tmp/flight_tracker_backend.log; then
+                print_error "Backend encountered errors during startup. Log output:"
+                echo "----------------------------------------"
+                cat /tmp/flight_tracker_backend.log
+                echo "----------------------------------------"
+                exit 1
+            fi
+        fi
+        
+        # Check if backend is responding (try multiple methods)
+        local health_check_success=false
+        
+        # Method 1: Try curl if available
+        if command -v curl &> /dev/null; then
+            if curl -s --connect-timeout 2 http://localhost:$BACKEND_PORT/health > /dev/null 2>&1; then
+                health_check_success=true
+            fi
+        # Method 2: Try wget if curl not available
+        elif command -v wget &> /dev/null; then
+            if wget -q --timeout=2 --tries=1 -O /dev/null http://localhost:$BACKEND_PORT/health 2>/dev/null; then
+                health_check_success=true
+            fi
+        # Method 3: Try netcat/nc if available
+        elif command -v nc &> /dev/null; then
+            if echo "" | nc -w 2 localhost $BACKEND_PORT > /dev/null 2>&1; then
+                health_check_success=true
+            fi
+        fi
+        
+        if [ "$health_check_success" = true ]; then
             print_success "Backend started successfully on http://$BACKEND_HOST:$BACKEND_PORT"
             return 0
         fi
@@ -252,17 +283,43 @@ start_backend() {
         sleep 1
         ((attempts++))
         
-        # Show progress every 5 seconds
+        # Show progress every 5 seconds with more detail
         if [ $((attempts % 5)) -eq 0 ]; then
             print_status "Still waiting for backend... (${attempts}/${max_attempts})"
+            if [ -f "/tmp/flight_tracker_backend.log" ]; then
+                echo "Recent log output:"
+                tail -3 /tmp/flight_tracker_backend.log 2>/dev/null || echo "No recent log output"
+            fi
         fi
     done
     
     print_error "Backend failed to start responding after $max_attempts seconds"
-    print_status "Backend log output:"
+    print_status "Final backend log output:"
     echo "----------------------------------------"
-    cat /tmp/flight_tracker_backend.log
+    if [ -f "/tmp/flight_tracker_backend.log" ]; then
+        cat /tmp/flight_tracker_backend.log
+    else
+        echo "No log file found at /tmp/flight_tracker_backend.log"
+    fi
     echo "----------------------------------------"
+    
+    print_status "Process status:"
+    if kill -0 $backend_pid 2>/dev/null; then
+        echo "Backend process (PID: $backend_pid) is still running"
+    else
+        echo "Backend process (PID: $backend_pid) has terminated"
+    fi
+    
+    print_status "Network diagnostics:"
+    echo "Checking if port $BACKEND_PORT is listening..."
+    if command -v netstat &> /dev/null; then
+        netstat -tlnp 2>/dev/null | grep ":$BACKEND_PORT " || echo "Port $BACKEND_PORT is not listening"
+    elif command -v ss &> /dev/null; then
+        ss -tlnp 2>/dev/null | grep ":$BACKEND_PORT " || echo "Port $BACKEND_PORT is not listening"
+    else
+        echo "Unable to check port status (netstat/ss not available)"
+    fi
+    
     exit 1
 }
 
@@ -409,6 +466,7 @@ show_help() {
     echo "  test       Test the raspi client"
     echo "  logs       Show recent logs"
     echo "  debug      Show detailed backend debug information"
+    echo "  quick-debug Run a quick backend test and show immediate results"
     echo "  reset      Remove all installed dependencies and reset environment"
     echo "  help       Show this help message"
     echo
@@ -521,6 +579,70 @@ show_debug() {
     echo "python main.py --host $BACKEND_HOST --port $BACKEND_PORT"
 }
 
+# Function for quick debug test
+quick_debug() {
+    print_status "=== QUICK BACKEND DEBUG TEST ==="
+    echo
+    
+    # Check if we're in the right directory
+    if [ ! -d "$BACKEND_DIR" ]; then
+        print_error "Backend directory not found: $BACKEND_DIR"
+        return 1
+    fi
+    
+    cd "$BACKEND_DIR"
+    
+    # Check virtual environment
+    if [ ! -d "venv" ]; then
+        print_error "Virtual environment not found. Run: $0 setup"
+        return 1
+    fi
+    
+    print_status "Testing backend startup directly..."
+    source venv/bin/activate
+    
+    # Try to run the backend for 10 seconds and capture output
+    timeout 10 python main.py --host $BACKEND_HOST --port $BACKEND_PORT 2>&1 | tee /tmp/quick_debug.log &
+    local test_pid=$!
+    
+    sleep 3
+    
+    # Check if it's running
+    if kill -0 $test_pid 2>/dev/null; then
+        print_status "Backend process started, testing health endpoint..."
+        
+        # Test health endpoint
+        local health_result=""
+        if command -v curl &> /dev/null; then
+            health_result=$(curl -s --connect-timeout 3 http://localhost:$BACKEND_PORT/health 2>&1)
+        elif command -v wget &> /dev/null; then
+            health_result=$(wget -q --timeout=3 --tries=1 -O - http://localhost:$BACKEND_PORT/health 2>&1)
+        fi
+        
+        if [ -n "$health_result" ]; then
+            print_success "✓ Backend is responding!"
+            echo "Health response: $health_result"
+        else
+            print_warning "Backend started but not responding to health checks"
+        fi
+        
+        # Kill the test process
+        kill $test_pid 2>/dev/null
+        wait $test_pid 2>/dev/null
+    else
+        print_error "Backend process failed to start"
+    fi
+    
+    echo
+    print_status "Backend output during test:"
+    echo "----------------------------------------"
+    cat /tmp/quick_debug.log 2>/dev/null || echo "No output captured"
+    echo "----------------------------------------"
+    
+    # Clean up
+    rm -f /tmp/quick_debug.log
+}
+
 # Function to reset environment
 reset_environment() {
     print_status "=== RESETTING FLIGHT TRACKER ENVIRONMENT ==="
@@ -625,6 +747,9 @@ case "${1:-start}" in
         ;;
     "debug")
         show_debug
+        ;;
+    "quick-debug")
+        quick_debug
         ;;
     "reset")
         reset_environment
