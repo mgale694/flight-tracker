@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Tracker } from './pages/Tracker';
+import { Activities } from './pages/Activities';
 import { Settings } from './components/Settings';
+import { ThemeSwitch } from './components/ThemeSwitch';
 
 function App() {
   return (
@@ -16,9 +18,13 @@ function App() {
               <Link to="/" className="nav-link">
                 Display
               </Link>
+              <Link to="/activities" className="nav-link">
+                Activities
+              </Link>
               <Link to="/settings" className="nav-link">
                 Settings
               </Link>
+              <ThemeSwitch />
             </div>
           </div>
         </nav>
@@ -26,6 +32,7 @@ function App() {
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Tracker />} />
+            <Route path="/activities" element={<Activities />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>

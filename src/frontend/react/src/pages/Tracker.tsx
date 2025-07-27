@@ -1,178 +1,199 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { BootScreen, FlightScreen } from '../components/Display';
+import React, { useState, useEffect } from 'react';
 import { FlightTrackerAPI } from '../api';
+import { WaveshareDisplay } from '../components/WaveshareDisplay';
+import { FlightBoard } from '../components/FlightBoard';
 import type { FlightData } from '../types';
 
 export const Tracker: React.FC = () => {
+  const [flights, setFlights] = useState<FlightData[]>([]);
   const [currentFlight, setCurrentFlight] = useState<FlightData | null>(null);
+  const [stats, setStats] = useState({
+    flights_count: 0,
+    elapsed_str: '00:00:00'
+  });
+  const [timestamp, setTimestamp] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
   const [isBooting, setIsBooting] = useState(true);
-  const [logs, setLogs] = useState<string[]>([]);
-  const [currentTime, setCurrentTime] = useState('');
-  const [location, setLocation] = useState('');
-  const pollIntervalRef = useRef<number | null>(null);
+  const [bootData, setBootData] = useState<{
+    face: string;
+    phrase: string;
+    message: string;
+  } | null>(null);
+  const [flightRotationIndex, setFlightRotationIndex] = useState(0);
 
+  // Initialize component
   useEffect(() => {
-    // Update time every second
-    const timeInterval = setInterval(() => {
-      setCurrentTime(new Date().toLocaleTimeString('en-GB', { hour12: false }));
-    }, 1000);
+    initializeTracker();
+    
+    const interval = setInterval(() => {
+      fetchData();
+    }, 5000); // Poll every 5 seconds
 
-    // Start the app
-    initialize();
+    const rotationInterval = setInterval(() => {
+      rotateCurrentFlight();
+    }, 10000); // Rotate display every 10 seconds
 
     return () => {
-      clearInterval(timeInterval);
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
+      clearInterval(interval);
+      clearInterval(rotationInterval);
     };
   }, []);
 
-  const initialize = async () => {
+  const initializeTracker = async () => {
     try {
-      // Mock boot sequence
-      const bootData = await FlightTrackerAPI.getBootData();
-      addLog(bootData.message);
-      
-      // Short boot sequence
+      // Show boot sequence
+      const bootResponse = await FlightTrackerAPI.getBootData();
+      setBootData(bootResponse);
+      setIsBooting(true);
+
+      // Simulate boot time
       setTimeout(() => {
         setIsBooting(false);
-        addLog("Ready! Starting flight monitoring...");
-        startPolling();
-      }, 2000);
+        fetchData();
+      }, 3000);
+
     } catch (error) {
-      console.error('Error initializing:', error);
-      addLog('Error during startup');
+      console.error('Failed to initialize tracker:', error);
+      setIsBooting(false);
+      setIsConnected(false);
+      setIsLoading(false);
     }
   };
 
-  const startPolling = () => {
-    // Poll every 3 seconds
-    pollIntervalRef.current = window.setInterval(async () => {
-      try {
-        const flightData = await FlightTrackerAPI.getFlights();
-        
-        // Update location
-        setLocation(flightData.location);
-        
-        if (flightData.flights.length > 0) {
-          const latestFlight = flightData.flights[0];
-          
-          // Check if this is a new flight
-          if (!currentFlight || currentFlight.id !== latestFlight.id) {
-            setCurrentFlight(latestFlight);
-            addLog(`✈️ ${latestFlight.callsign} detected at ${latestFlight.altitude} ft`);
-          }
-        } else {
-          // No flights
-          if (currentFlight) {
-            addLog("No flights in area");
-            setCurrentFlight(null);
-          }
-        }
-      } catch (error) {
-        console.error('Polling error:', error);
-        addLog('Error fetching flight data');
-      }
-    }, 3000);
-  };
-
-  const addLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
-    setLogs(prev => [...prev.slice(-9), `[${timestamp}] ${message}`]);
-  };
-
-  const triggerManualRefresh = async () => {
+  const fetchData = async () => {
     try {
-      const flightData = await FlightTrackerAPI.getFlights();
-      addLog(`Manual refresh: ${flightData.flights.length} flights found`);
+      const response = await FlightTrackerAPI.getFlights();
       
-      if (flightData.flights.length > 0) {
-        setCurrentFlight(flightData.flights[0]);
+      setFlights(response.flights);
+      setStats({
+        flights_count: response.flights.length,
+        elapsed_str: formatElapsedTime(Date.now() - response.timestamp)
+      });
+      setTimestamp(new Date().toLocaleString());
+      setIsConnected(true);
+      setIsLoading(false);
+
+      // Update current flight if flights available
+      if (response.flights.length > 0 && flightRotationIndex < response.flights.length) {
+        setCurrentFlight(response.flights[flightRotationIndex]);
+      } else if (response.flights.length === 0) {
+        setCurrentFlight(null);
+        setFlightRotationIndex(0);
       }
+
     } catch (error) {
-      addLog('Error during manual refresh');
+      console.error('Failed to fetch flight data:', error);
+      setIsConnected(false);
     }
   };
 
-  const renderDisplay = () => {
-    if (isBooting) {
-      return (
-        <BootScreen
-          face="(⌐■_■)"
-          phrase="Flight Tracker starting..."
-          timestamp={currentTime}
-        />
-      );
+  const rotateCurrentFlight = () => {
+    if (flights.length > 0) {
+      setFlightRotationIndex(prev => {
+        const newIndex = (prev + 1) % flights.length;
+        setCurrentFlight(flights[newIndex]);
+        return newIndex;
+      });
     }
+  };
 
-    if (currentFlight) {
-      // Create mock stats for display compatibility
-      const mockStats = {
-        flights_count: 1,
-        elapsed_time: Math.floor(Date.now() / 1000),
-        elapsed_str: new Date().toLocaleTimeString(),
-        location_short: location || 'Unknown'
-      };
-
-      return (
-        <FlightScreen
-          flight={currentFlight}
-          stats={mockStats}
-          timestamp={currentTime}
-        />
-      );
-    }
-
-    // Scanning state
-    return (
-      <BootScreen
-        face="(◔_◔)"
-        phrase="Scanning for aircraft..."
-        timestamp={currentTime}
-      />
-    );
+  const formatElapsedTime = (ms: number): string => {
+    const seconds = Math.floor(ms / 1000);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
-    <div className="tracker-container">
-      <h1>Flight Tracker</h1>
-      
-      <div className="display-section">
-        {renderDisplay()}
-      </div>
-
-      <div className="controls-section">
-        <button 
-          onClick={triggerManualRefresh} 
-          className="control-button"
-          disabled={isBooting}
-        >
-          Refresh Now
-        </button>
-        
-        <div className="status-info">
-          <div className="status-item">
-            <strong>Location:</strong> {location || 'Loading...'}
-          </div>
-          <div className="status-item">
-            <strong>Status:</strong> {isBooting ? 'Starting...' : 'Monitoring'}
-          </div>
-          <div className="status-item">
-            <strong>Current Flight:</strong> {currentFlight ? currentFlight.callsign : 'None'}
-          </div>
-        </div>
-      </div>
-
-      <div className="logs-section">
-        <h3>Activity Log</h3>
-        <div className="logs-container">
-          {logs.map((log, index) => (
-            <div key={index} className="log-entry">
-              {log}
+    <div className="tracker-page">
+      <div className="tracker-container">
+        {/* Left Column - Waveshare Display Simulation */}
+        <div className="tracker-display-column">
+          <div className="display-header">
+            <h2>Raspberry Pi Display</h2>
+            <div className="display-status">
+              <span className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
+                {isConnected ? '🟢' : '🔴'}
+              </span>
+              <span className="status-text">
+                {isConnected ? 'Connected' : 'Disconnected'}
+              </span>
             </div>
-          ))}
+          </div>
+          
+          <WaveshareDisplay
+            flight={currentFlight}
+            stats={stats}
+            timestamp={timestamp}
+            isBooting={isBooting}
+            bootData={bootData || undefined}
+          />
+          
+          <div className="display-info">
+            <p className="display-description">
+              Simulates the Waveshare 2.13" e-ink display on the Raspberry Pi.
+              Shows current tracked flight information, rotating every 10 seconds.
+            </p>
+            {flights.length > 1 && (
+              <div className="rotation-indicator">
+                Flight {flightRotationIndex + 1} of {flights.length}
+                <div className="rotation-dots">
+                  {flights.map((_, index) => (
+                    <span
+                      key={index}
+                      className={`dot ${index === flightRotationIndex ? 'active' : ''}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Right Column - Flight Board */}
+        <div className="tracker-board-column">
+          <div className="board-header">
+            <h2>Flight Board</h2>
+            <div className="board-stats">
+              <span className="flight-count">
+                {flights.length} {flights.length === 1 ? 'Flight' : 'Flights'} Detected
+              </span>
+            </div>
+          </div>
+          
+          <FlightBoard currentFlights={flights} />
+          
+          <div className="board-info">
+            <p className="board-description">
+              Rolling list of detected flights, similar to an airport departure board.
+              Shows recent and current flights in your tracking area.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Status Bar */}
+      <div className="tracker-status-bar">
+        <div className="status-item">
+          <span className="label">Last Update:</span>
+          <span className="value">{timestamp || 'Never'}</span>
+        </div>
+        <div className="status-item">
+          <span className="label">Session Time:</span>
+          <span className="value">{stats.elapsed_str}</span>
+        </div>
+        <div className="status-item">
+          <span className="label">Total Flights:</span>
+          <span className="value">{stats.flights_count}</span>
+        </div>
+        {isLoading && (
+          <div className="status-item">
+            <span className="loading-spinner">⟳</span>
+            <span className="value">Loading...</span>
+          </div>
+        )}
       </div>
     </div>
   );
