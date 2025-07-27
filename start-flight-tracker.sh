@@ -186,9 +186,25 @@ start_backend() {
     
     # Check if backend port is already in use
     if check_port $BACKEND_PORT; then
-        print_warning "Port $BACKEND_PORT is already in use. Attempting to stop existing service..."
-        kill_by_pidfile "$PIDS_DIR/backend.pid" "backend"
-        sleep 2
+        print_warning "Port $BACKEND_PORT is already in use."
+        
+        # Check if it's responding to health checks
+        if curl -s --connect-timeout 3 http://localhost:$BACKEND_PORT/health > /dev/null 2>&1; then
+            print_success "Existing backend is healthy and responding!"
+            print_status "Skipping backend startup - already running"
+            return 0
+        else
+            print_warning "Existing service on port $BACKEND_PORT is not responding. Attempting to stop it..."
+            kill_by_pidfile "$PIDS_DIR/backend.pid" "backend"
+            
+            # Also try to kill any python process using the port
+            local port_pid=$(lsof -ti:$BACKEND_PORT 2>/dev/null)
+            if [ -n "$port_pid" ]; then
+                print_status "Killing process $port_pid using port $BACKEND_PORT"
+                kill $port_pid 2>/dev/null || true
+                sleep 3
+            fi
+        fi
     fi
     
     # Check if Python is available
