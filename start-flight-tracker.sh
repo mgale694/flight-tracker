@@ -19,7 +19,7 @@ BACKEND_HOST="0.0.0.0"   # Allow external access
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
+YIGHLIGHT='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
@@ -37,7 +37,7 @@ print_success() {
 }
 
 print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    echo -e "${YIGHLIGHT}[WARNING]${NC} $1"
 }
 
 print_error() {
@@ -834,6 +834,40 @@ frontend_debug() {
     
     # Clean up
     rm -f /tmp/frontend_quick_debug.log
+}
+
+# Function to create a lightweight package.json for memory-constrained systems
+create_lightweight_frontend() {
+    local frontend_dir="$1"
+    print_status "Creating lightweight frontend setup for Raspberry Pi..."
+    
+    cd "$frontend_dir"
+    
+    # Backup original package.json
+    if [ -f "package.json" ]; then
+        cp package.json package.json.full
+    fi
+    
+    # Create minimal package.json for Raspberry Pi
+    cat > package.json.minimal << 'EOF'
+{
+  "name": "frontend-minimal",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "python3 -m http.server 5173 --directory dist",
+    "build": "echo 'Building with minimal setup...' && mkdir -p dist && cp -r public/* dist/ 2>/dev/null || true",
+    "serve": "python3 -m http.server 5173 --directory dist"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
+EOF
+    
+    print_status "Lightweight package.json created. Use 'mv package.json.minimal package.json' if needed."
 }
 
 # Function to reset environment
