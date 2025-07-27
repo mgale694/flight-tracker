@@ -57,7 +57,20 @@ export class FlightTrackerAPI {
     return response.json();
   }
 
-  static createWebSocket(): WebSocket {
-    return new WebSocket(`ws://localhost:8000/ws`);
+  static async getDemoFlight(): Promise<{ flight: FlightData; stats: SessionStats }> {
+    const response = await fetch(`${API_BASE}/demo/flight`);
+    if (!response.ok) throw new Error('Failed to fetch demo flight');
+    return response.json();
+  }
+
+  static async getHealth(): Promise<{
+    status: string;
+    timestamp: number;
+    tracker_initialized: boolean;
+    session_active: boolean;
+  }> {
+    const response = await fetch(`${API_BASE}/health`);
+    if (!response.ok) throw new Error('Failed to fetch health status');
+    return response.json();
   }
 }

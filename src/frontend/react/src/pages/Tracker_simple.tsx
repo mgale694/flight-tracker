@@ -11,7 +11,7 @@ export const Tracker: React.FC = () => {
   const [isTracking, setIsTracking] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [currentTime, setCurrentTime] = useState('');
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     // Update time every second
@@ -52,7 +52,7 @@ export const Tracker: React.FC = () => {
     addLog('Starting flight monitoring...');
     
     // Poll every 3 seconds
-    pollIntervalRef.current = setInterval(async () => {
+    pollIntervalRef.current = window.setInterval(async () => {
       try {
         const flightData = await FlightTrackerAPI.getFlights();
         
@@ -85,8 +85,6 @@ export const Tracker: React.FC = () => {
       pollIntervalRef.current = null;
     }
   };
-    }
-  };
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
@@ -111,6 +109,7 @@ export const Tracker: React.FC = () => {
       await FlightTrackerAPI.stopSession();
       setIsTracking(false);
       addLog('Flight tracking session stopped');
+      stopPolling();
     } catch (error) {
       console.error('Error stopping session:', error);
       addLog('Error stopping tracking session');

@@ -1,7 +1,7 @@
 import time
 import logging
 import os
-from .tracker import FlightTracker
+from .api_client import FlightTrackerAPIAdapter
 from .ui.display import Display
 from .faces import get_random_boot_face
 from .voice import Voice
@@ -31,8 +31,12 @@ class FlightAgent:
 
         print("🔧 Initializing FlightTracker...")
         try:
-            self.tracker = FlightTracker(tracker_config)
-            print("✓ FlightTracker initialized")
+            # Try to get config from backend API first, fallback to local config
+            backend_url = config.get("api", {}).get(
+                "backend_url", "http://localhost:8000"
+            )
+            self.tracker = FlightTrackerAPIAdapter(tracker_config, backend_url)
+            print("✓ FlightTracker initialized (with API backend)")
         except Exception as e:
             print(f"❌ Error initializing FlightTracker: {e}")
             raise

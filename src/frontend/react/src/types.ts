@@ -34,11 +34,3 @@ export interface Config {
   max_flights: number;
   max_elapsed_time: number;
 }
-
-export interface WebSocketMessage {
-  type: 'new_flight' | 'session_started' | 'session_stopped' | 'stats_update';
-  flight?: FlightData;
-  stats?: SessionStats;
-  message?: string;
-  timestamp: string;
-}

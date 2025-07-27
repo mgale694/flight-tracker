@@ -1,4 +1,5 @@
-from flightradar24.api import FlightRadar24API
+from FlightRadar24 import FlightRadar24API
+
 from geopy.geocoders import Nominatim
 import logging
 import time
@@ -178,19 +179,21 @@ class FlightTracker:
         )
 
     def update_config(self, new_config):
-        """Update configuration and reinitialize if needed"""
-        old_address = self.address
+        """Update the flight tracker configuration"""
         self.config.update(new_config)
-        self.address = new_config.get("address", self.address)
-        self.search_radius = new_config.get("search_radius_meters", self.search_radius)
-        self.max_flights = new_config.get("max_flights", self.max_flights)
-        self.max_elapsed_time = new_config.get(
-            "max_elapsed_time", self.max_elapsed_time
+        self.address = self.config.get(
+            "address", "31 Maltings Place, Fulham, London, SW62BU"
         )
+        self.search_radius = self.config.get("search_radius_meters", 3000)
+        self.max_flights = self.config.get("max_flights", 20)
+        self.max_elapsed_time = self.config.get("max_elapsed_time", 30 * 60)
 
-        # If address changed, update location
-        if old_address != self.address:
+        # Re-setup location with new address
+        try:
             self._setup_location()
+            logging.info(f"Configuration updated: {self.address}")
+        except Exception as e:
+            logging.error(f"Error updating location after config change: {e}")
 
 
 class Voice:
