@@ -355,9 +355,25 @@ start_frontend() {
     
     # Check if frontend port is already in use
     if check_port $FRONTEND_PORT; then
-        print_warning "Port $FRONTEND_PORT is already in use. Attempting to stop existing service..."
-        kill_by_pidfile "$PIDS_DIR/frontend.pid" "frontend"
-        sleep 2
+        print_warning "Port $FRONTEND_PORT is already in use."
+        
+        # Check if it's responding to HTTP requests
+        if curl -s --connect-timeout 3 http://localhost:$FRONTEND_PORT > /dev/null 2>&1; then
+            print_success "Existing frontend is responding!"
+            print_status "Skipping frontend startup - already running"
+            return 0
+        else
+            print_warning "Existing service on port $FRONTEND_PORT is not responding. Attempting to stop it..."
+            kill_by_pidfile "$PIDS_DIR/frontend.pid" "frontend"
+            
+            # Also try to kill any process using the port
+            local port_pid=$(lsof -ti:$FRONTEND_PORT 2>/dev/null)
+            if [ -n "$port_pid" ]; then
+                print_status "Killing process $port_pid using port $FRONTEND_PORT"
+                kill $port_pid 2>/dev/null || true
+                sleep 3
+            fi
+        fi
     fi
     
     # Check if frontend directory exists
