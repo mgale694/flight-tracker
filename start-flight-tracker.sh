@@ -182,8 +182,14 @@ setup_dependencies() {
         print_status "Trying with reduced memory settings..."
         export NODE_OPTIONS="--max-old-space-size=512"
         if ! npm install --no-optional --production --prefer-offline; then
-            print_error "Failed to install Node.js dependencies even with reduced settings"
-            exit 1
+            print_warning "Standard installation failed. Attempting lightweight setup..."
+            create_lightweight_frontend "$FRONTEND_DIR"
+            mv package.json.minimal package.json
+            if ! npm install --no-optional; then
+                print_error "Even lightweight setup failed. You may need more swap space."
+                print_status "Consider adding swap: sudo dphys-swapfile swapoff && sudo dphys-swapfile setup && sudo dphys-swapfile swapon"
+                exit 1
+            fi
         fi
     fi
     
@@ -584,6 +590,7 @@ show_help() {
     echo "  quick-debug Run a quick backend test and show immediate results"
     echo "  frontend-debug Run a quick frontend test and show immediate results"
     echo "  reset      Remove all installed dependencies and reset environment"
+    echo "  swap       Help increase swap space for memory-constrained systems"
     echo "  help       Show this help message"
     echo
     echo "First Time Setup:"
@@ -937,6 +944,27 @@ reset_environment() {
     print_status "To start services, run: $0 start"
 }
 
+# Function to help increase swap space on Raspberry Pi
+increase_swap() {
+    print_status "Helping increase swap space for npm install..."
+    
+    if [ ! -f "/etc/dphys-swapfile" ]; then
+        print_error "dphys-swapfile not found. Installing..."
+        sudo apt update && sudo apt install -y dphys-swapfile
+    fi
+    
+    print_status "Current swap configuration:"
+    free -h
+    
+    print_status "To increase swap space, run these commands:"
+    echo "  sudo dphys-swapfile swapoff"
+    echo "  sudo sed -i 's/CONF_SWAPSIZE=.*/CONF_SWAPSIZE=1024/' /etc/dphys-swapfile"
+    echo "  sudo dphys-swapfile setup"
+    echo "  sudo dphys-swapfile swapon"
+    echo ""
+    echo "Then run: $0 setup"
+}
+
 # Main script logic
 case "${1:-start}" in
     "setup")
@@ -983,6 +1011,9 @@ case "${1:-start}" in
         ;;
     "reset")
         reset_environment
+        ;;
+    "swap")
+        increase_swap
         ;;
     "help"|"-h"|"--help")
         show_help
