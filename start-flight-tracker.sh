@@ -496,8 +496,21 @@ show_status() {
     echo
     
     # Backend status
+    local backend_running=false
+    local backend_pid=""
+    
+    # First check if we have a valid PID file
     if [ -f "$PIDS_DIR/backend.pid" ] && ps -p $(cat "$PIDS_DIR/backend.pid") > /dev/null 2>&1; then
-        print_success "✅ Backend: Running (PID: $(cat "$PIDS_DIR/backend.pid"))"
+        backend_running=true
+        backend_pid=$(cat "$PIDS_DIR/backend.pid")
+    # If no PID file, check if backend is responding on the port
+    elif curl -s --connect-timeout 3 http://localhost:$BACKEND_PORT/health > /dev/null 2>&1; then
+        backend_running=true
+        backend_pid="unknown (not tracked by script)"
+    fi
+    
+    if [ "$backend_running" = true ]; then
+        print_success "✅ Backend: Running (PID: $backend_pid)"
         echo "   URL: http://$BACKEND_HOST:$BACKEND_PORT"
         if curl -s http://localhost:$BACKEND_PORT/health > /dev/null 2>&1; then
             echo "   Health: OK"
