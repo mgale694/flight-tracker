@@ -593,8 +593,49 @@ show_status() {
 stop_all() {
     print_status "Stopping all Flight Tracker services..."
     
+    # Stop backend
+    print_status "Stopping backend..."
     kill_by_pidfile "$PIDS_DIR/backend.pid" "backend"
+    
+    # Also kill any process using backend port
+    local backend_port_pid=$(lsof -ti:$BACKEND_PORT 2>/dev/null)
+    if [ -n "$backend_port_pid" ]; then
+        print_status "Killing additional process using backend port $BACKEND_PORT (PID: $backend_port_pid)"
+        kill $backend_port_pid 2>/dev/null || true
+        sleep 2
+        # Force kill if still running
+        if kill -0 $backend_port_pid 2>/dev/null; then
+            kill -9 $backend_port_pid 2>/dev/null || true
+        fi
+    fi
+    
+    # Stop frontend
+    print_status "Stopping frontend..."
     kill_by_pidfile "$PIDS_DIR/frontend.pid" "frontend"
+    
+    # Also kill any process using frontend port
+    local frontend_port_pid=$(lsof -ti:$FRONTEND_PORT 2>/dev/null)
+    if [ -n "$frontend_port_pid" ]; then
+        print_status "Killing additional process using frontend port $FRONTEND_PORT (PID: $frontend_port_pid)"
+        kill $frontend_port_pid 2>/dev/null || true
+        sleep 2
+        # Force kill if still running
+        if kill -0 $frontend_port_pid 2>/dev/null; then
+            kill -9 $frontend_port_pid 2>/dev/null || true
+        fi
+    fi
+    
+    # Clean up PID files
+    rm -f "$PIDS_DIR"/*.pid 2>/dev/null || true
+    
+    # Verify ports are free
+    sleep 1
+    if check_port $BACKEND_PORT; then
+        print_warning "Backend port $BACKEND_PORT still in use after cleanup"
+    fi
+    if check_port $FRONTEND_PORT; then
+        print_warning "Frontend port $FRONTEND_PORT still in use after cleanup"
+    fi
     
     print_success "All services stopped"
 }
