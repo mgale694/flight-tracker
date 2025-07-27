@@ -1,28 +1,49 @@
 import React from 'react';
-import { setTheme, getTheme } from '../theme';
+import { setTheme, getTheme, getCurrentEffectiveTheme } from '../theme';
 
 export const ThemeSwitch: React.FC = () => {
-  const [currentTheme, setCurrentTheme] = React.useState<'light' | 'dark' | 'auto'>(getTheme());
+  const [currentTheme, setCurrentTheme] = React.useState<'light' | 'dark'>(() => {
+    // Initialize based on system preference if no saved theme
+    const savedTheme = getTheme();
+    if (savedTheme === 'auto') {
+      return getCurrentEffectiveTheme();
+    }
+    return savedTheme;
+  });
 
-  const handleThemeChange = (theme: 'light' | 'dark' | 'auto') => {
-    setTheme(theme);
-    setCurrentTheme(theme);
+  // Set initial theme based on system preference if needed
+  React.useEffect(() => {
+    const savedTheme = getTheme();
+    if (savedTheme === 'auto') {
+      const systemTheme = getCurrentEffectiveTheme();
+      setTheme(systemTheme);
+      setCurrentTheme(systemTheme);
+    }
+  }, []);
+
+  const handleThemeToggle = () => {
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    setCurrentTheme(newTheme);
+  };
+
+  const getThemeIcon = () => {
+    return currentTheme === 'dark' ? '🌙' : '☀️';
+  };
+
+  const getThemeLabel = () => {
+    return currentTheme === 'dark' ? 'Dark' : 'Light';
   };
 
   return (
-    <div className="theme-switch">
-      <label className="form-group">
-        <span className="flight-detail-label">Theme</span>
-        <select 
-          value={currentTheme} 
-          onChange={(e) => handleThemeChange(e.target.value as 'light' | 'dark' | 'auto')}
-          className="theme-select"
-        >
-          <option value="auto">Auto (System)</option>
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-        </select>
-      </label>
-    </div>
+    <button
+      onClick={handleThemeToggle}
+      className="theme-toggle-button"
+      title={`Current theme: ${getThemeLabel()}. Click to switch to ${currentTheme === 'light' ? 'Dark' : 'Light'} mode.`}
+      aria-label={`Switch to ${currentTheme === 'light' ? 'dark' : 'light'} theme. Current: ${getThemeLabel()}`}
+    >
+      <span className="theme-icon">{getThemeIcon()}</span>
+      <span className="theme-label">{getThemeLabel()}</span>
+    </button>
   );
 };

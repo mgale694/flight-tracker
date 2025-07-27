@@ -1,7 +1,25 @@
 import type { FlightData, Config } from './types';
 
-// Use environment variable for API base URL, fallback to localhost
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+// Smart API base URL detection
+function getApiBaseUrl(): string {
+  // Check environment variable first
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  
+  // Get current window location
+  const currentHost = window.location.hostname;
+  
+  // If accessing via network IP, use the same IP for backend
+  if (currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+    return `http://${currentHost}:8000`;
+  }
+  
+  // Default to localhost
+  return 'http://localhost:8000';
+}
+
+const API_BASE = getApiBaseUrl();
 
 export class FlightTrackerAPI {
   // Main endpoint - gets current flights (simplified)

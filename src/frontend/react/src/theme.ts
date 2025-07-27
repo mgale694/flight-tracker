@@ -94,25 +94,40 @@ export const theme = {
 };
 
 // Theme switching utilities
-export const setTheme = (themeName: 'light' | 'dark' | 'auto') => {
+export const setTheme = (themeName: 'light' | 'dark') => {
   const root = document.documentElement;
-  
-  if (themeName === 'auto') {
-    root.removeAttribute('data-theme');
-  } else {
-    root.setAttribute('data-theme', themeName);
-  }
+  root.setAttribute('data-theme', themeName);
   
   // Store preference
   localStorage.setItem('flight-tracker-theme', themeName);
 };
 
 export const getTheme = (): 'light' | 'dark' | 'auto' => {
-  return (localStorage.getItem('flight-tracker-theme') as 'light' | 'dark' | 'auto') || 'auto';
+  const saved = localStorage.getItem('flight-tracker-theme') as 'light' | 'dark' | 'auto' | null;
+  return saved || 'auto'; // Return 'auto' for migration purposes
+};
+
+// Get the currently effective theme (resolves 'auto' to 'light' or 'dark')
+export const getCurrentEffectiveTheme = (): 'light' | 'dark' => {
+  const currentTheme = getTheme();
+  
+  if (currentTheme === 'auto') {
+    // Check system preference
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  
+  return currentTheme;
 };
 
 // Initialize theme on app start
 export const initializeTheme = () => {
   const savedTheme = getTheme();
-  setTheme(savedTheme);
+  
+  // If saved theme is 'auto' or doesn't exist, use system preference
+  if (savedTheme === 'auto') {
+    const systemTheme = getCurrentEffectiveTheme();
+    setTheme(systemTheme);
+  } else {
+    setTheme(savedTheme);
+  }
 };
