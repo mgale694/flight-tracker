@@ -1,8 +1,8 @@
 [main]
 address = "31 Maltings Place, Fulham, London, SW62BU"
-search_radius_meters = 5000
+search_radius_meters = 3000
 max_flights = 25
-max_elapsed_time = 2400
+max_elapsed_time = 1800
 
 [ui]
 boot_screen_duration = 10

@@ -101,7 +101,8 @@ export const WaveshareDisplay: React.FC<WaveshareDisplayProps> = ({
             </div>
                         
             <div className="scan-footer">
-              <span className="status-info">READY</span>
+                <span className="timestamp-info"></span>
+                <span className="timestamp-info"></span>
               <span className="timestamp-info">TIME: {formatTimeOnly(timestamp)}</span>
             </div>
           </div>

@@ -28,11 +28,12 @@ export const ThemeSwitch: React.FC = () => {
   };
 
   const getThemeIcon = () => {
-    return currentTheme === 'dark' ? '🌙' : '☀️';
+    // Show icon for what mode it will switch TO, not current mode
+    return currentTheme === 'dark' ? '☀️' : '🌙';
   };
 
   const getThemeLabel = () => {
-    return currentTheme === 'dark' ? 'Dark' : 'Light';
+    return currentTheme === 'dark' ? 'Light' : 'Dark';
   };
 
   return (

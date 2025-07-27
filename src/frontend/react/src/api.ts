@@ -80,4 +80,31 @@ export class FlightTrackerAPI {
       message: "Flight Tracker initialized"
     };
   }
+
+  // Activity logs
+  static async getActivityLogs(): Promise<{
+    logs: Array<{
+      id: string;
+      timestamp: string;
+      level: string;
+      message: string;
+      category: string;
+    }>;
+  }> {
+    const response = await fetch(`${API_BASE}/logs`);
+    if (!response.ok) throw new Error('Failed to fetch activity logs');
+    return response.json();
+  }
+
+  // Clear activity logs
+  static async clearActivityLogs(): Promise<{
+    status: string;
+    message: string;
+  }> {
+    const response = await fetch(`${API_BASE}/logs`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to clear activity logs');
+    return response.json();
+  }
 }
