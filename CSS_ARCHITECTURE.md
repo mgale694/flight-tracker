@@ -1,19 +1,22 @@
 # Flight Tracker Frontend - Unified CSS Architecture
 
 ## Overview
+
 The Flight Tracker frontend has been refactored to use a single, comprehensive CSS file (`index.css`) with CSS custom properties (variables) for consistent theming and styling throughout the application.
 
 ## 🎨 Architecture Benefits
 
 ### Before (Multiple CSS Files)
+
 - `App.css` - App-specific styles
-- `Settings.css` - Settings component styles  
+- `Settings.css` - Settings component styles
 - `Tracker.css` - Tracker page styles
 - `Display.css` - Display component styles
 - Inconsistent color schemes and spacing
 - Difficult to maintain and update themes
 
 ### After (Unified CSS)
+
 - Single `index.css` file with all styles
 - CSS custom properties for theming
 - Consistent design system
@@ -23,6 +26,7 @@ The Flight Tracker frontend has been refactored to use a single, comprehensive C
 ## 🏗️ CSS Structure
 
 ### 1. CSS Custom Properties (Variables)
+
 All design tokens are defined as CSS variables in `:root`:
 
 ```css
@@ -31,19 +35,19 @@ All design tokens are defined as CSS variables in `:root`:
   --primary-color: #007bff;
   --success-color: #28a745;
   --danger-color: #dc3545;
-  
+
   /* Spacing System */
   --spacing-xs: 5px;
   --spacing-sm: 10px;
   --spacing-md: 20px;
   --spacing-lg: 30px;
   --spacing-xl: 40px;
-  
+
   /* Typography */
   --font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   --font-size-base: 16px;
   --font-size-lg: 18px;
-  
+
   /* Layout */
   --max-width: 1200px;
   --border-radius: 8px;
@@ -51,6 +55,7 @@ All design tokens are defined as CSS variables in `:root`:
 ```
 
 ### 2. Theme Support
+
 Built-in support for light, dark, and auto (system preference) themes:
 
 ```css
@@ -76,32 +81,58 @@ Built-in support for light, dark, and auto (system preference) themes:
 ```
 
 ### 3. Component Classes
+
 Organized by component type with consistent naming:
 
 ```css
 /* Navigation */
-.navbar { /* styles */ }
-.nav-container { /* styles */ }
-.nav-link { /* styles */ }
+.navbar {
+  /* styles */
+}
+.nav-container {
+  /* styles */
+}
+.nav-link {
+  /* styles */
+}
 
 /* Forms */
-.form-group { /* styles */ }
-.btn-primary { /* styles */ }
-.btn-success { /* styles */ }
+.form-group {
+  /* styles */
+}
+.btn-primary {
+  /* styles */
+}
+.btn-success {
+  /* styles */
+}
 
 /* Cards */
-.card { /* styles */ }
-.flight-card { /* styles */ }
+.card {
+  /* styles */
+}
+.flight-card {
+  /* styles */
+}
 ```
 
 ### 4. Utility Classes
+
 Common utility classes for quick styling:
 
 ```css
-.text-center { text-align: center; }
-.mb-3 { margin-bottom: var(--spacing-md); }
-.d-flex { display: flex; }
-.w-100 { width: 100%; }
+.text-center {
+  text-align: center;
+}
+.mb-3 {
+  margin-bottom: var(--spacing-md);
+}
+.d-flex {
+  display: flex;
+}
+.w-100 {
+  width: 100%;
+}
 ```
 
 ## 🛠️ Vite Configuration
@@ -118,37 +149,35 @@ export default defineConfig({
   },
   define: {
     __THEME_COLORS__: {
-      primary: '#007bff',
-      success: '#28a745',
-      warning: '#ffc107',
-      danger: '#dc3545',
-      info: '#17a2b8',
+      primary: "#007bff",
+      success: "#28a745",
+      warning: "#ffc107",
+      danger: "#dc3545",
+      info: "#17a2b8",
     },
   },
   build: {
     cssCodeSplit: false, // Bundle all CSS into one file
   },
-})
+});
 ```
 
 ## 🎯 Usage Guide
 
 ### Using CSS Variables in Components
+
 ```tsx
 // Direct CSS variable usage
-<div style={{ color: 'var(--primary-color)' }}>
-  Primary colored text
-</div>
+<div style={{ color: "var(--primary-color)" }}>Primary colored text</div>;
 
 // With the theme utility
-import { theme } from '../theme';
+import { theme } from "../theme";
 
-<div style={{ color: theme.colors.primary }}>
-  Primary colored text
-</div>
+<div style={{ color: theme.colors.primary }}>Primary colored text</div>;
 ```
 
 ### Using Predefined Classes
+
 ```tsx
 // Button classes
 <button className="btn btn-primary">Save</button>
@@ -170,21 +199,23 @@ import { theme } from '../theme';
 ```
 
 ### Theme Switching
+
 ```tsx
-import { setTheme, getTheme } from '../theme';
+import { setTheme, getTheme } from "../theme";
 
 // Get current theme
 const currentTheme = getTheme(); // 'light' | 'dark' | 'auto'
 
 // Set theme
-setTheme('dark');
-setTheme('light');
-setTheme('auto'); // Follows system preference
+setTheme("dark");
+setTheme("light");
+setTheme("auto"); // Follows system preference
 ```
 
 ## 🎨 Design System
 
 ### Color Palette
+
 - **Primary**: `#007bff` (Blue) - Main actions, links
 - **Success**: `#28a745` (Green) - Success states, positive actions
 - **Warning**: `#ffc107` (Yellow) - Warnings, cautions
@@ -192,6 +223,7 @@ setTheme('auto'); // Follows system preference
 - **Info**: `#17a2b8` (Cyan) - Information, neutral states
 
 ### Spacing Scale
+
 - **XS**: `5px` - Very tight spacing
 - **SM**: `10px` - Small spacing
 - **MD**: `20px` - Medium spacing (default)
@@ -199,6 +231,7 @@ setTheme('auto'); // Follows system preference
 - **XL**: `40px` - Extra large spacing
 
 ### Typography Scale
+
 - **SM**: `14px` - Small text, labels
 - **Base**: `16px` - Body text
 - **LG**: `18px` - Subheadings
@@ -206,6 +239,7 @@ setTheme('auto'); // Follows system preference
 - **XXL**: `32px` - Large headings
 
 ### Border Radius
+
 - **SM**: `4px` - Buttons, inputs
 - **MD**: `8px` - Cards, containers
 - **LG**: `12px` - Large containers
@@ -219,7 +253,7 @@ Built-in responsive breakpoints:
   .nav-container {
     flex-direction: column;
   }
-  
+
   .flights-list {
     grid-template-columns: 1fr;
   }
@@ -237,18 +271,21 @@ Built-in responsive breakpoints:
 ## 🔧 Maintenance
 
 ### Adding New Components
+
 1. Add component styles to `index.css` under appropriate section
 2. Use existing CSS variables for consistency
 3. Follow the established naming convention
 4. Add responsive styles if needed
 
 ### Adding New Colors
+
 1. Add the color variable to `:root`
 2. Add theme-specific variants if needed
 3. Update the TypeScript theme types
 4. Document the color usage
 
 ### Customizing Themes
+
 1. Modify CSS variables in `:root` sections
 2. Add new theme data attributes if needed
 3. Update the theme switcher options
@@ -271,16 +308,18 @@ src/
 ## 🎭 Theme Components
 
 ### ThemeSwitch Component
+
 A ready-to-use theme switcher:
 
 ```tsx
-import { ThemeSwitch } from './components/ThemeSwitch';
+import { ThemeSwitch } from "./components/ThemeSwitch";
 
 // Add to navigation or settings
-<ThemeSwitch />
+<ThemeSwitch />;
 ```
 
 Features:
+
 - Auto-detects system preference
 - Saves user preference to localStorage
 - Instant theme switching
@@ -301,4 +340,4 @@ Features:
 **Performance**: ✅ Improved bundle size and loading
 **Maintainability**: ✅ Single source of truth for styles
 
-*Last updated: July 27, 2025*
+_Last updated: July 27, 2025_
