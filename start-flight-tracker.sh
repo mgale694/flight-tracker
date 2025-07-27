@@ -358,25 +358,115 @@ start_frontend() {
     print_status "Configuring frontend for network access..."
     
     # Start frontend in background with network host
+    print_status "Starting frontend process..."
     nohup npm run dev -- --host $FRONTEND_HOST --port $FRONTEND_PORT > /tmp/flight_tracker_frontend.log 2>&1 &
-    echo $! > "$PIDS_DIR/frontend.pid"
+    local frontend_pid=$!
+    echo $frontend_pid > "$PIDS_DIR/frontend.pid"
+    
+    # Give the process a moment to start
+    sleep 3
+    
+    # Check if the process is still running
+    if ! kill -0 $frontend_pid 2>/dev/null; then
+        print_error "Frontend process crashed immediately. Log output:"
+        echo "----------------------------------------"
+        cat /tmp/flight_tracker_frontend.log
+        echo "----------------------------------------"
+        exit 1
+    fi
     
     # Wait for frontend to start
-    print_status "Waiting for frontend to start..."
+    print_status "Waiting for frontend to start responding..."
     local attempts=0
-    local max_attempts=30
+    local max_attempts=60  # Frontend takes longer to start than backend
     
     while [ $attempts -lt $max_attempts ]; do
-        if curl -s http://localhost:$FRONTEND_PORT > /dev/null 2>&1; then
+        # Check if process is still running
+        if ! kill -0 $frontend_pid 2>/dev/null; then
+            print_error "Frontend process died during startup. Log output:"
+            echo "----------------------------------------"
+            cat /tmp/flight_tracker_frontend.log
+            echo "----------------------------------------"
+            exit 1
+        fi
+        
+        # Check if there are any error messages in the log
+        if [ -f "/tmp/flight_tracker_frontend.log" ] && [ -s "/tmp/flight_tracker_frontend.log" ]; then
+            # Check for common error patterns
+            if grep -q -i "error\|exception\|failed\|enoent\|cannot resolve\|port.*already in use" /tmp/flight_tracker_frontend.log; then
+                print_error "Frontend encountered errors during startup. Log output:"
+                echo "----------------------------------------"
+                cat /tmp/flight_tracker_frontend.log
+                echo "----------------------------------------"
+                exit 1
+            fi
+        fi
+        
+        # Check if frontend is responding (try multiple methods)
+        local health_check_success=false
+        
+        # Method 1: Try curl if available
+        if command -v curl &> /dev/null; then
+            if curl -s --connect-timeout 2 http://localhost:$FRONTEND_PORT > /dev/null 2>&1; then
+                health_check_success=true
+            fi
+        # Method 2: Try wget if curl not available  
+        elif command -v wget &> /dev/null; then
+            if wget -q --timeout=2 --tries=1 -O /dev/null http://localhost:$FRONTEND_PORT 2>/dev/null; then
+                health_check_success=true
+            fi
+        # Method 3: Try netcat/nc if available
+        elif command -v nc &> /dev/null; then
+            if echo "" | nc -w 2 localhost $FRONTEND_PORT > /dev/null 2>&1; then
+                health_check_success=true
+            fi
+        fi
+        
+        if [ "$health_check_success" = true ]; then
             print_success "Frontend started successfully on http://$FRONTEND_HOST:$FRONTEND_PORT"
             return 0
         fi
+        
         sleep 1
         ((attempts++))
+        
+        # Show progress every 10 seconds with more detail for frontend (it's slower)
+        if [ $((attempts % 10)) -eq 0 ]; then
+            print_status "Still waiting for frontend... (${attempts}/${max_attempts})"
+            if [ -f "/tmp/flight_tracker_frontend.log" ]; then
+                echo "Recent log output:"
+                tail -3 /tmp/flight_tracker_frontend.log 2>/dev/null || echo "No recent log output"
+            fi
+        fi
     done
     
-    print_error "Frontend failed to start after $max_attempts seconds"
-    cat /tmp/flight_tracker_frontend.log
+    print_error "Frontend failed to start responding after $max_attempts seconds"
+    print_status "Final frontend log output:"
+    echo "----------------------------------------"
+    if [ -f "/tmp/flight_tracker_frontend.log" ]; then
+        cat /tmp/flight_tracker_frontend.log
+    else
+        echo "No log file found at /tmp/flight_tracker_frontend.log"
+    fi
+    echo "----------------------------------------"
+    
+    print_status "Process status:"
+    if kill -0 $frontend_pid 2>/dev/null; then
+        echo "Frontend process (PID: $frontend_pid) is still running"
+    else
+        echo "Frontend process (PID: $frontend_pid) has terminated"
+    fi
+    
+    print_status "Network diagnostics:"
+    echo "Checking if port $FRONTEND_PORT is listening..."
+    if command -v netstat &> /dev/null; then
+        netstat -tlnp 2>/dev/null | grep ":$FRONTEND_PORT " || echo "Port $FRONTEND_PORT is not listening"
+    elif command -v ss &> /dev/null; then
+        ss -tlnp 2>/dev/null | grep ":$FRONTEND_PORT " || echo "Port $FRONTEND_PORT is not listening"
+    else
+        echo "Unable to check port status (netstat/ss not available)"
+    fi
+    
     exit 1
 }
 
@@ -467,6 +557,7 @@ show_help() {
     echo "  logs       Show recent logs"
     echo "  debug      Show detailed backend debug information"
     echo "  quick-debug Run a quick backend test and show immediate results"
+    echo "  frontend-debug Run a quick frontend test and show immediate results"
     echo "  reset      Remove all installed dependencies and reset environment"
     echo "  help       Show this help message"
     echo
@@ -643,6 +734,83 @@ quick_debug() {
     rm -f /tmp/quick_debug.log
 }
 
+# Function for quick frontend debug test
+frontend_debug() {
+    print_status "=== QUICK FRONTEND DEBUG TEST ==="
+    echo
+    
+    # Check if we're in the right directory
+    if [ ! -d "$FRONTEND_DIR" ]; then
+        print_error "Frontend directory not found: $FRONTEND_DIR"
+        return 1
+    fi
+    
+    cd "$FRONTEND_DIR"
+    
+    # Check if node_modules exists
+    if [ ! -d "node_modules" ]; then
+        print_error "Node modules not found. Run: $0 setup"
+        return 1
+    fi
+    
+    # Check if npm is available
+    if ! command -v npm &> /dev/null; then
+        print_error "npm is not installed or not in PATH"
+        return 1
+    fi
+    
+    print_status "Testing frontend startup directly..."
+    
+    # Check package.json for dev script
+    if [ -f "package.json" ]; then
+        echo "Package.json dev script:"
+        grep -A 2 -B 2 '"dev"' package.json || echo "No dev script found"
+    fi
+    
+    # Try to run the frontend for 15 seconds and capture output
+    timeout 15 npm run dev -- --host $FRONTEND_HOST --port $FRONTEND_PORT 2>&1 | tee /tmp/frontend_quick_debug.log &
+    local test_pid=$!
+    
+    sleep 5
+    
+    # Check if it's running
+    if kill -0 $test_pid 2>/dev/null; then
+        print_status "Frontend process started, testing accessibility..."
+        
+        # Test frontend endpoint
+        local frontend_result=""
+        if command -v curl &> /dev/null; then
+            frontend_result=$(curl -s --connect-timeout 5 http://localhost:$FRONTEND_PORT 2>&1)
+        elif command -v wget &> /dev/null; then
+            frontend_result=$(wget -q --timeout=5 --tries=1 -O - http://localhost:$FRONTEND_PORT 2>&1)
+        fi
+        
+        if echo "$frontend_result" | grep -q -i "html\|<!doctype\|<title\|react"; then
+            print_success "✓ Frontend is responding with HTML content!"
+        elif [ -n "$frontend_result" ]; then
+            print_warning "Frontend responding but content may be unexpected"
+            echo "Response preview: ${frontend_result:0:200}..."
+        else
+            print_warning "Frontend started but not responding to HTTP requests"
+        fi
+        
+        # Kill the test process
+        kill $test_pid 2>/dev/null
+        wait $test_pid 2>/dev/null
+    else
+        print_error "Frontend process failed to start"
+    fi
+    
+    echo
+    print_status "Frontend output during test:"
+    echo "----------------------------------------"
+    cat /tmp/frontend_quick_debug.log 2>/dev/null || echo "No output captured"
+    echo "----------------------------------------"
+    
+    # Clean up
+    rm -f /tmp/frontend_quick_debug.log
+}
+
 # Function to reset environment
 reset_environment() {
     print_status "=== RESETTING FLIGHT TRACKER ENVIRONMENT ==="
@@ -750,6 +918,9 @@ case "${1:-start}" in
         ;;
     "quick-debug")
         quick_debug
+        ;;
+    "frontend-debug")
+        frontend_debug
         ;;
     "reset")
         reset_environment
