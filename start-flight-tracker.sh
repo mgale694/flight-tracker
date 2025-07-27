@@ -157,69 +157,16 @@ setup_dependencies() {
     
     cd "$FRONTEND_DIR"
     
-    # Check system architecture for ARM-specific handling
-    local arch=$(uname -m)
-    if [[ "$arch" == "armv7l" || "$arch" == "aarch64" || "$arch" == "arm64" ]]; then
-        print_status "Detected ARM architecture ($arch) - applying compatibility fixes..."
-        
-        # Remove existing node_modules if they might be from different architecture
-        if [ -d "node_modules" ]; then
-            print_status "Removing existing node_modules for ARM compatibility..."
-            rm -rf node_modules package-lock.json
-        fi
-        
-        print_status "Installing Node.js dependencies with ARM compatibility..."
-        # Install without optional dependencies that often cause ARM issues
-        if ! npm install --no-optional --no-audit --no-fund; then
-            print_warning "Standard install failed, trying with additional ARM fixes..."
-            
-            # Try with legacy peer deps (sometimes helps with ARM)
-            if ! npm install --no-optional --legacy-peer-deps; then
-                print_error "Failed to install Node.js dependencies"
-                print_status "This might be due to ARM compatibility issues."
-                print_status "Try manually: cd $FRONTEND_DIR && npm install --no-optional"
-                exit 1
-            fi
-        fi
-        
-        # Fix the specific Rollup ARM issue by installing the correct native binary
-        print_status "Installing ARM-specific Rollup binaries..."
-        if [[ "$arch" == "arm64" ]]; then
-            # macOS ARM
-            npm install --no-save @rollup/rollup-darwin-arm64 2>/dev/null || print_warning "Could not install macOS ARM Rollup binary"
-        elif [[ "$arch" == "aarch64" ]]; then
-            # Linux ARM
-            npm install --no-save @rollup/rollup-linux-arm64-gnu 2>/dev/null || print_warning "Could not install Linux ARM Rollup binary"
-        fi
-        
-        # Check if we have a working Vite installation
-        if ! npm list vite >/dev/null 2>&1; then
-            print_warning "Vite not found, installing serve as fallback..."
-            npm install --save-dev serve
-        else
-            # Verify Rollup is working by trying a quick build test
-            print_status "Testing Rollup/Vite compatibility..."
-            if ! timeout 10 npm run build -- --mode test --emptyOutDir > /tmp/rollup_test.log 2>&1; then
-                print_warning "Vite/Rollup test failed, installing serve as guaranteed fallback..."
-                npm install --save-dev serve
-                print_status "Serve package installed for ARM compatibility"
-            else
-                print_success "Vite/Rollup working correctly on ARM"
-                rm -rf dist 2>/dev/null || true  # Clean up test build
-            fi
-        fi
-    else
-        # Always reinstall dependencies to ensure compatibility
-        if [ -d "node_modules" ]; then
-            print_status "Removing existing node_modules for fresh install..."
-            rm -rf node_modules package-lock.json
-        fi
-        
-        print_status "Installing minimal Node.js dependencies..."
-        if ! npm install; then
-            print_error "Failed to install Node.js dependencies"
-            exit 1
-        fi
+    # Always reinstall dependencies to ensure compatibility
+    if [ -d "node_modules" ]; then
+        print_status "Removing existing node_modules for fresh install..."
+        rm -rf node_modules package-lock.json
+    fi
+    
+    print_status "Installing minimal Node.js dependencies..."
+    if ! npm install; then
+        print_error "Failed to install Node.js dependencies"
+        exit 1
     fi
     
     print_success "All dependencies installed successfully!"
@@ -413,170 +360,14 @@ start_frontend() {
     # Update API base URL in frontend to use network-accessible backend
     print_status "Configuring frontend for network access..."
     
-    # Check system architecture for ARM-specific handling
-    local arch=$(uname -m)
-    local start_success=false
+    # Start frontend with simple TypeScript compilation + HTTP server
+    print_status "Starting frontend process..."
+    nohup npm run dev > /tmp/flight_tracker_frontend.log 2>&1 &
+    local frontend_pid=$!
+    echo $frontend_pid > "$PIDS_DIR/frontend.pid"
     
-    if [[ "$arch" == "armv7l" || "$arch" == "aarch64" || "$arch" == "arm64" ]]; then
-        print_status "Detected ARM architecture ($arch) - using ARM-compatible approach..."
-        
-        # Try Vite with ARM optimizations first
-        export NODE_OPTIONS="--max-old-space-size=1024"
-        
-        print_status "Attempting Vite startup with ARM optimizations..."
-        nohup npm run dev -- --host $FRONTEND_HOST --port $FRONTEND_PORT > /tmp/flight_tracker_frontend.log 2>&1 &
-        local frontend_pid=$!
-        echo $frontend_pid > "$PIDS_DIR/frontend.pid"
-        
-        # Give extra time for ARM startup
-        sleep 8
-        
-        # Check if Vite worked
-        if kill -0 $frontend_pid 2>/dev/null && ! grep -q "Illegal instruction" /tmp/flight_tracker_frontend.log; then
-            print_status "Vite started successfully on ARM"
-            start_success=true
-        else
-            print_warning "Vite failed on ARM, trying build + serve approach..."
-            kill $frontend_pid 2>/dev/null || true
-            
-            # Alternative: Build and serve static files
-            print_status "Building for production to avoid Vite ARM issues..."
-            
-            # First, try to fix the Rollup issue by reinstalling with proper ARM binaries
-            local build_success=false
-            
-            # Try build (this might fail on ARM with "Illegal instruction")
-            if npm run build > /tmp/flight_tracker_build.log 2>&1; then
-                build_success=true
-                print_success "Build succeeded!"
-            else
-                # Check if it's the known ARM issue
-                if grep -q "Illegal instruction" /tmp/flight_tracker_build.log; then
-                    print_warning "Build failed with 'Illegal instruction' - this is expected on some ARM systems"
-                else
-                    print_warning "Build failed with other error:"
-                    cat /tmp/flight_tracker_build.log
-                fi
-            fi
-            
-            # Check if build succeeded and dist directory exists
-            if [ "$build_success" = true ] && [ -d "dist" ] && [ "$(ls -A dist 2>/dev/null)" ]; then
-                print_status "Starting static file server for built files..."
-                
-                # Try serve package first (if installed)
-                if npm list serve >/dev/null 2>&1; then
-                    print_status "Using serve package for static hosting..."
-                    nohup npm run serve > /tmp/flight_tracker_frontend.log 2>&1 &
-                    frontend_pid=$!
-                    echo $frontend_pid > "$PIDS_DIR/frontend.pid"
-                    start_success=true
-                # Fall back to Python HTTP server
-                elif command -v python3 &> /dev/null; then
-                    cd dist
-                    nohup python3 -m http.server $FRONTEND_PORT --bind $FRONTEND_HOST > /tmp/flight_tracker_frontend.log 2>&1 &
-                    frontend_pid=$!
-                    echo $frontend_pid > "$PIDS_DIR/frontend.pid"
-                    start_success=true
-                    cd ..
-                    print_status "Using Python HTTP server for built files"
-                else
-                    print_error "No suitable static server available"
-                    exit 1
-                fi
-            else
-                # Final fallback: Create minimal ARM-compatible frontend
-                print_status "Creating minimal ARM-compatible frontend..."
-                mkdir -p dist
-                cat > dist/index.html << 'EOF'
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Flight Tracker - ARM Compatibility Mode</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            margin: 0; padding: 20px; background: #f5f5f5; 
-        }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header { text-align: center; margin-bottom: 30px; }
-        .status { background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2196f3; }
-        .api-section { background: #f1f8e9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4caf50; }
-        .endpoint { background: #fafafa; padding: 10px; margin: 5px 0; border-radius: 4px; font-family: monospace; }
-        .endpoint a { color: #1976d2; text-decoration: none; }
-        .endpoint a:hover { text-decoration: underline; }
-        h1 { color: #1976d2; margin: 0; }
-        h3 { color: #424242; margin-top: 0; }
-        .note { background: #fff3e0; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff9800; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>✈️ Flight Tracker</h1>
-            <p><strong>ARM Compatibility Mode</strong></p>
-        </div>
-        
-        <div class="status">
-            <h3>🔧 System Status</h3>
-            <p>The React development environment is not compatible with this ARM processor architecture, but the <strong>backend API is fully functional</strong>!</p>
-            <p>All flight tracking features are available through the API endpoints below.</p>
-        </div>
-        
-        <div class="api-section">
-            <h3>🔗 Backend API Access</h3>
-            <div class="endpoint">
-                <strong>Health Check:</strong> <a href="/health" target="_blank">GET /health</a>
-            </div>
-            <div class="endpoint">
-                <strong>API Documentation:</strong> <a href="/docs" target="_blank">GET /docs</a> (Interactive Swagger UI)
-            </div>
-            <div class="endpoint">
-                <strong>Current Flights:</strong> <a href="/flights" target="_blank">GET /flights</a>
-            </div>
-            <div class="endpoint">
-                <strong>Overhead Flights:</strong> <a href="/flights/overhead" target="_blank">GET /flights/overhead</a>
-            </div>
-        </div>
-        
-        <div class="note">
-            <h3>💡 Usage Notes</h3>
-            <ul>
-                <li>Click the links above to access API endpoints directly</li>
-                <li>The <strong>/docs</strong> endpoint provides a full interactive API interface</li>
-                <li>You can access this from other devices on your network</li>
-                <li>The backend provides all flight tracking functionality</li>
-            </ul>
-        </div>
-    </div>
-</body>
-</html>
-EOF
-                
-                if command -v python3 &> /dev/null; then
-                    cd dist
-                    nohup python3 -m http.server $FRONTEND_PORT --bind $FRONTEND_HOST > /tmp/flight_tracker_frontend.log 2>&1 &
-                    frontend_pid=$!
-                    echo $frontend_pid > "$PIDS_DIR/frontend.pid"
-                    start_success=true
-                    cd ..
-                    print_warning "Started minimal ARM-compatible frontend - backend API fully functional!"
-                else
-                    print_error "Python3 not available for fallback server"
-                    exit 1
-                fi
-            fi
-        fi
-    else
-        # Standard startup for non-ARM systems (x86/x64)
-        print_status "Starting frontend process..."
-        nohup npm run dev -- --host $FRONTEND_HOST --port $FRONTEND_PORT > /tmp/flight_tracker_frontend.log 2>&1 &
-        local frontend_pid=$!
-        echo $frontend_pid > "$PIDS_DIR/frontend.pid"
-        start_success=true
-        sleep 5
-    fi
+    # Give the process time to build and start (TypeScript compilation takes time)
+    sleep 5
     
     # Check if the process is still running
     if ! kill -0 $frontend_pid 2>/dev/null; then
