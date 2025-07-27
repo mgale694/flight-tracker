@@ -1,13 +1,80 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛩️ Flight Tracker</h1>
+            <div class="status-indicator" id="status-indicator">
+                <span id="backend-status">Checking backend...</span>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-button active" onclick="showTab('tracker')">Flight Tracker</button>
+            <button class="tab-button" onclick="showTab('activities')">Activities</button>
+            <button class="tab-button" onclick="showTab('settings')">Settings</button>
+        </nav>
+
+        <!-- Flight Tracker Tab -->
+        <div id="tracker" class="tab-content active">
+            <div class="search-section">
+                <h2>Track Flights</h2>
+                <div class="search-form">
+                    <input type="text" id="flight-input" placeholder="Enter flight number (e.g., AA123)" />
+                    <button onclick="searchFlight()">Search Flight</button>
+                </div>
+                <div class="location-form">
+                    <input type="text" id="location-input" placeholder="Enter location (e.g., LAX, New York)" />
+                    <button onclick="searchByLocation()">Search by Location</button>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <h3>Flight Information</h3>
+                <div id="flight-results" class="results-container">
+                    <p>Enter a flight number or location to get started</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activities Tab -->
+        <div id="activities" class="tab-content">
+            <h2>Recent Activities</h2>
+            <button onclick="loadActivities()">Refresh Activities</button>
+            <div id="activities-list" class="activities-container">
+                <p>Loading activities...</p>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <h2>Settings</h2>
+            <div class="settings-form">
+                <label>
+                    Backend URL:
+                    <input type="text" id="backend-url" value="http://localhost:8000" />
+                </label>
+                <button onclick="updateBackendUrl()">Update</button>
+                <button onclick="testConnection()">Test Connection</button>
+            </div>
+            <div class="api-info">
+                <h3>API Endpoints</h3>
+                <ul>
+                    <li><a href="/health" target="_blank">/health</a> - Backend health check</li>
+                    <li><a href="/docs" target="_blank">/docs</a> - API documentation</li>
+                    <li><a href="/flights" target="_blank">/flights</a> - Flight data</li>
+                    <li><a href="/activities" target="_blank">/activities</a> - Activity logs</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
 </html>

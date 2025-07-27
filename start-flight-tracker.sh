@@ -160,7 +160,7 @@ setup_dependencies() {
     fi
     
     # Setup frontend dependencies
-    print_status "Setting up frontend dependencies..."
+    print_status "Setting up simple frontend (no Node.js dependencies needed)..."
     if [ ! -d "$FRONTEND_DIR" ]; then
         print_error "Frontend directory not found: $FRONTEND_DIR"
         exit 1
@@ -168,30 +168,13 @@ setup_dependencies() {
     
     cd "$FRONTEND_DIR"
     
-    # Always reinstall dependencies to ensure compatibility
+    # Clean up any existing Node.js artifacts
     if [ -d "node_modules" ]; then
-        print_status "Removing existing node_modules for fresh install..."
+        print_status "Removing old Node.js dependencies..."
         rm -rf node_modules package-lock.json
     fi
     
-    print_status "Installing minimal Node.js dependencies..."
-    # Set Node.js memory limit for Raspberry Pi
-    export NODE_OPTIONS="--max-old-space-size=1024"
-    if ! npm install --no-optional --production; then
-        print_error "Failed to install Node.js dependencies"
-        print_status "Trying with reduced memory settings..."
-        export NODE_OPTIONS="--max-old-space-size=512"
-        if ! npm install --no-optional --production --prefer-offline; then
-            print_warning "Standard installation failed. Attempting lightweight setup..."
-            create_lightweight_frontend "$FRONTEND_DIR"
-            mv package.json.minimal package.json
-            if ! npm install --no-optional; then
-                print_error "Even lightweight setup failed. You may need more swap space."
-                print_status "Consider adding swap: sudo dphys-swapfile swapoff && sudo dphys-swapfile setup && sudo dphys-swapfile swapon"
-                exit 1
-            fi
-        fi
-    fi
+    print_success "Simple frontend setup complete!"
     
     print_success "All dependencies installed successfully!"
     print_status "You can now run: $0 start"
@@ -352,19 +335,13 @@ start_backend() {
 
 # Function to start the frontend
 start_frontend() {
-    print_status "Starting React Frontend..."
+    print_status "Starting Simple Frontend..."
     
     # Check if frontend port is already in use
     if check_port $FRONTEND_PORT; then
         print_warning "Port $FRONTEND_PORT is already in use. Attempting to stop existing service..."
         kill_by_pidfile "$PIDS_DIR/frontend.pid" "frontend"
         sleep 2
-    fi
-    
-    # Check if Node.js is available
-    if ! command -v npm &> /dev/null; then
-        print_error "npm is not installed or not in PATH"
-        exit 1
     fi
     
     # Check if frontend directory exists
@@ -375,24 +352,15 @@ start_frontend() {
     
     cd "$FRONTEND_DIR"
     
-    # Install dependencies if node_modules doesn't exist
-    if [ ! -d "node_modules" ]; then
-        print_status "Installing frontend dependencies..."
-        # Set Node.js memory limit for Raspberry Pi
-        export NODE_OPTIONS="--max-old-space-size=1024"
-        if ! npm install --no-optional --production; then
-            print_warning "Failed with normal settings, trying reduced memory..."
-            export NODE_OPTIONS="--max-old-space-size=512"
-            npm install --no-optional --production --prefer-offline
-        fi
+    # Remove any existing node_modules to avoid confusion
+    if [ -d "node_modules" ]; then
+        print_status "Removing old Node.js dependencies (no longer needed)..."
+        rm -rf node_modules package-lock.json
     fi
     
-    # Update API base URL in frontend to use network-accessible backend
-    print_status "Configuring frontend for network access..."
-    
-    # Start frontend with simple TypeScript compilation + HTTP server
-    print_status "Starting frontend process..."
-    nohup npm run dev > /tmp/flight_tracker_frontend.log 2>&1 &
+    # Start simple HTTP server using Python (no Node.js dependencies needed)
+    print_status "Starting Python HTTP server for simple frontend..."
+    nohup python3 -m http.server $FRONTEND_PORT > /tmp/flight_tracker_frontend.log 2>&1 &
     local frontend_pid=$!
     echo $frontend_pid > "$PIDS_DIR/frontend.pid"
     
@@ -454,7 +422,8 @@ start_frontend() {
         fi
         
         if [ "$health_check_success" = true ]; then
-            print_success "Frontend started successfully on http://$FRONTEND_HOST:$FRONTEND_PORT"
+            print_success "Simple Frontend started successfully on http://$FRONTEND_HOST:$FRONTEND_PORT"
+            print_status "Access your flight tracker at: http://$(hostname -I | awk '{print $1}'):$FRONTEND_PORT"
             return 0
         fi
         
@@ -591,6 +560,7 @@ show_help() {
     echo "  frontend-debug Run a quick frontend test and show immediate results"
     echo "  reset      Remove all installed dependencies and reset environment"
     echo "  swap       Help increase swap space for memory-constrained systems"
+    echo "  minimal-frontend  Setup minimal frontend for low-memory systems"
     echo "  help       Show this help message"
     echo
     echo "First Time Setup:"
@@ -877,6 +847,36 @@ EOF
     print_status "Lightweight package.json created. Use 'mv package.json.minimal package.json' if needed."
 }
 
+# Function to setup minimal frontend only
+setup_minimal_frontend() {
+    print_status "Setting up minimal frontend for Raspberry Pi..."
+    
+    if [ ! -d "$FRONTEND_DIR" ]; then
+        print_error "Frontend directory not found: $FRONTEND_DIR"
+        exit 1
+    fi
+    
+    cd "$FRONTEND_DIR"
+    
+    # Create the lightweight package.json
+    create_lightweight_frontend "$FRONTEND_DIR"
+    
+    # Use the minimal version
+    if [ -f "package.json.minimal" ]; then
+        mv package.json package.json.full 2>/dev/null || true
+        mv package.json.minimal package.json
+        print_success "Minimal frontend configuration created"
+    fi
+    
+    # Try to install minimal dependencies
+    export NODE_OPTIONS="--max-old-space-size=512"
+    if npm install --no-optional; then
+        print_success "Minimal frontend dependencies installed"
+    else
+        print_warning "Even minimal install failed, will use Python HTTP server only"
+    fi
+}
+
 # Function to reset environment
 reset_environment() {
     print_status "=== RESETTING FLIGHT TRACKER ENVIRONMENT ==="
@@ -1014,6 +1014,9 @@ case "${1:-start}" in
         ;;
     "swap")
         increase_swap
+        ;;
+    "minimal-frontend")
+        setup_minimal_frontend
         ;;
     "help"|"-h"|"--help")
         show_help
