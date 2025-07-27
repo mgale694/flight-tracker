@@ -182,10 +182,31 @@ setup_dependencies() {
             fi
         fi
         
+        # Fix the specific Rollup ARM issue by installing the correct native binary
+        print_status "Installing ARM-specific Rollup binaries..."
+        if [[ "$arch" == "arm64" ]]; then
+            # macOS ARM
+            npm install --no-save @rollup/rollup-darwin-arm64 2>/dev/null || print_warning "Could not install macOS ARM Rollup binary"
+        elif [[ "$arch" == "aarch64" ]]; then
+            # Linux ARM
+            npm install --no-save @rollup/rollup-linux-arm64-gnu 2>/dev/null || print_warning "Could not install Linux ARM Rollup binary"
+        fi
+        
         # Check if we have a working Vite installation
         if ! npm list vite >/dev/null 2>&1; then
             print_warning "Vite not found, installing serve as fallback..."
             npm install --save-dev serve
+        else
+            # Verify Rollup is working by trying a quick build test
+            print_status "Testing Rollup/Vite compatibility..."
+            if ! timeout 10 npm run build -- --mode test --emptyOutDir > /tmp/rollup_test.log 2>&1; then
+                print_warning "Vite/Rollup test failed, installing serve as guaranteed fallback..."
+                npm install --save-dev serve
+                print_status "Serve package installed for ARM compatibility"
+            else
+                print_success "Vite/Rollup working correctly on ARM"
+                rm -rf dist 2>/dev/null || true  # Clean up test build
+            fi
         fi
     else
         # Always reinstall dependencies to ensure compatibility
@@ -420,7 +441,31 @@ start_frontend() {
             
             # Alternative: Build and serve static files
             print_status "Building for production to avoid Vite ARM issues..."
-            if npm run build > /tmp/flight_tracker_build.log 2>&1; then
+            
+            # First, try to fix the Rollup issue by reinstalling with proper ARM binaries
+            if grep -q "Cannot find module @rollup/rollup" /tmp/flight_tracker_frontend.log 2>/dev/null; then
+                print_status "Detected Rollup ARM binary issue, attempting fix..."
+                local arch=$(uname -m)
+                if [[ "$arch" == "arm64" ]]; then
+                    npm install --no-save @rollup/rollup-darwin-arm64 2>/dev/null || true
+                elif [[ "$arch" == "aarch64" ]]; then
+                    npm install --no-save @rollup/rollup-linux-arm64-gnu 2>/dev/null || true
+                fi
+                
+                # Try build again after fixing Rollup
+                print_status "Retrying build after Rollup fix..."
+                if npm run build > /tmp/flight_tracker_build.log 2>&1; then
+                    print_success "Build succeeded after Rollup fix!"
+                else
+                    print_warning "Build still failed, proceeding with serve fallback"
+                fi
+            else
+                # Normal build attempt
+                npm run build > /tmp/flight_tracker_build.log 2>&1
+            fi
+            
+            # Check if build succeeded
+            if [ -d "dist" ] && [ "$(ls -A dist 2>/dev/null)" ]; then
                 print_status "Starting static file server for built files..."
                 
                 # Try serve package first (if installed)
@@ -432,11 +477,7 @@ start_frontend() {
                     start_success=true
                 # Fall back to Python HTTP server
                 elif command -v python3 &> /dev/null; then
-                    cd dist 2>/dev/null || cd build 2>/dev/null || { 
-                        print_error "Build directory not found. Build may have failed."
-                        cat /tmp/flight_tracker_build.log
-                        exit 1
-                    }
+                    cd dist
                     nohup python3 -m http.server $FRONTEND_PORT --bind $FRONTEND_HOST > /tmp/flight_tracker_frontend.log 2>&1 &
                     frontend_pid=$!
                     echo $frontend_pid > "$PIDS_DIR/frontend.pid"
@@ -448,9 +489,58 @@ start_frontend() {
                     exit 1
                 fi
             else
-                print_error "Build failed. Check build log:"
+                print_error "Build failed and no dist directory found. Build log:"
                 cat /tmp/flight_tracker_build.log
-                exit 1
+                print_status "Attempting to install missing dependencies and retry..."
+                
+                # Final attempt: reinstall everything and install serve as guaranteed fallback
+                npm install --no-optional 2>/dev/null || true
+                npm install --save-dev serve 2>/dev/null || true
+                
+                # Create a simple fallback index.html if all else fails
+                print_status "Creating minimal fallback frontend..."
+                mkdir -p dist
+                cat > dist/index.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flight Tracker - Fallback Mode</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .error { background: #ffe6e6; padding: 20px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Flight Tracker - ARM Compatibility Mode</h1>
+        <div class="error">
+            <p><strong>Notice:</strong> The frontend is running in fallback mode due to ARM compatibility issues with Vite/Rollup.</p>
+            <p>The backend API is still fully functional at: <a href="/health" target="_blank">Backend Health Check</a></p>
+        </div>
+        <p>To access the full frontend, please:</p>
+        <ol>
+            <li>Install Node.js dependencies manually: <code>npm install --force</code></li>
+            <li>Install ARM binaries: <code>npm install @rollup/rollup-linux-arm64-gnu</code> (Linux) or <code>npm install @rollup/rollup-darwin-arm64</code> (macOS)</li>
+            <li>Restart the services</li>
+        </ol>
+    </div>
+</body>
+</html>
+EOF
+                
+                if command -v python3 &> /dev/null; then
+                    cd dist
+                    nohup python3 -m http.server $FRONTEND_PORT --bind $FRONTEND_HOST > /tmp/flight_tracker_frontend.log 2>&1 &
+                    frontend_pid=$!
+                    echo $frontend_pid > "$PIDS_DIR/frontend.pid"
+                    start_success=true
+                    cd ..
+                    print_warning "Started minimal fallback frontend - check browser for instructions"
+                else
+                    print_error "All frontend startup methods failed"
+                    exit 1
+                fi
             fi
         fi
     else
