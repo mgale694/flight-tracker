@@ -556,8 +556,21 @@ show_status() {
     echo
     
     # Frontend status
+    local frontend_running=false
+    local frontend_pid=""
+    
+    # First check if we have a valid PID file
     if [ -f "$PIDS_DIR/frontend.pid" ] && ps -p $(cat "$PIDS_DIR/frontend.pid") > /dev/null 2>&1; then
-        print_success "✅ Frontend: Running (PID: $(cat "$PIDS_DIR/frontend.pid"))"
+        frontend_running=true
+        frontend_pid=$(cat "$PIDS_DIR/frontend.pid")
+    # If no PID file, check if frontend is responding on the port
+    elif curl -s --connect-timeout 3 http://localhost:$FRONTEND_PORT > /dev/null 2>&1; then
+        frontend_running=true
+        frontend_pid="unknown (not tracked by script)"
+    fi
+    
+    if [ "$frontend_running" = true ]; then
+        print_success "✅ Frontend: Running (PID: $frontend_pid)"
         echo "   URL: http://$FRONTEND_HOST:$FRONTEND_PORT"
     else
         print_error "❌ Frontend: Not running"
