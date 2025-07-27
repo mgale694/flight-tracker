@@ -157,16 +157,48 @@ setup_dependencies() {
     
     cd "$FRONTEND_DIR"
     
-    # Always reinstall dependencies to ensure compatibility
-    if [ -d "node_modules" ]; then
-        print_status "Removing existing node_modules for fresh install..."
-        rm -rf node_modules package-lock.json
-    fi
-    
-    print_status "Installing minimal Node.js dependencies..."
-    if ! npm install; then
-        print_error "Failed to install Node.js dependencies"
-        exit 1
+    # Check system architecture for ARM-specific handling
+    local arch=$(uname -m)
+    if [[ "$arch" == "armv7l" || "$arch" == "aarch64" || "$arch" == "arm64" ]]; then
+        print_status "Detected ARM architecture ($arch) - applying compatibility fixes..."
+        
+        # Remove existing node_modules if they might be from different architecture
+        if [ -d "node_modules" ]; then
+            print_status "Removing existing node_modules for ARM compatibility..."
+            rm -rf node_modules package-lock.json
+        fi
+        
+        print_status "Installing Node.js dependencies with ARM compatibility..."
+        # Install without optional dependencies that often cause ARM issues
+        if ! npm install --no-optional --no-audit --no-fund; then
+            print_warning "Standard install failed, trying with additional ARM fixes..."
+            
+            # Try with legacy peer deps (sometimes helps with ARM)
+            if ! npm install --no-optional --legacy-peer-deps; then
+                print_error "Failed to install Node.js dependencies"
+                print_status "This might be due to ARM compatibility issues."
+                print_status "Try manually: cd $FRONTEND_DIR && npm install --no-optional"
+                exit 1
+            fi
+        fi
+        
+        # Check if we have a working Vite installation
+        if ! npm list vite >/dev/null 2>&1; then
+            print_warning "Vite not found, installing serve as fallback..."
+            npm install --save-dev serve
+        fi
+    else
+        # Always reinstall dependencies to ensure compatibility
+        if [ -d "node_modules" ]; then
+            print_status "Removing existing node_modules for fresh install..."
+            rm -rf node_modules package-lock.json
+        fi
+        
+        print_status "Installing minimal Node.js dependencies..."
+        if ! npm install; then
+            print_error "Failed to install Node.js dependencies"
+            exit 1
+        fi
     fi
     
     print_success "All dependencies installed successfully!"
@@ -360,14 +392,76 @@ start_frontend() {
     # Update API base URL in frontend to use network-accessible backend
     print_status "Configuring frontend for network access..."
     
-    # Start frontend with simple TypeScript compilation + HTTP server
-    print_status "Starting frontend process..."
-    nohup npm run dev > /tmp/flight_tracker_frontend.log 2>&1 &
-    local frontend_pid=$!
-    echo $frontend_pid > "$PIDS_DIR/frontend.pid"
+    # Check system architecture for ARM-specific handling
+    local arch=$(uname -m)
+    local start_success=false
     
-    # Give the process time to build and start (TypeScript compilation takes time)
-    sleep 5
+    if [[ "$arch" == "armv7l" || "$arch" == "aarch64" || "$arch" == "arm64" ]]; then
+        print_status "Detected ARM architecture ($arch) - using ARM-compatible approach..."
+        
+        # Try Vite with ARM optimizations first
+        export NODE_OPTIONS="--max-old-space-size=1024"
+        
+        print_status "Attempting Vite startup with ARM optimizations..."
+        nohup npm run dev -- --host $FRONTEND_HOST --port $FRONTEND_PORT > /tmp/flight_tracker_frontend.log 2>&1 &
+        local frontend_pid=$!
+        echo $frontend_pid > "$PIDS_DIR/frontend.pid"
+        
+        # Give extra time for ARM startup
+        sleep 8
+        
+        # Check if Vite worked
+        if kill -0 $frontend_pid 2>/dev/null && ! grep -q "Illegal instruction" /tmp/flight_tracker_frontend.log; then
+            print_status "Vite started successfully on ARM"
+            start_success=true
+        else
+            print_warning "Vite failed on ARM, trying build + serve approach..."
+            kill $frontend_pid 2>/dev/null || true
+            
+            # Alternative: Build and serve static files
+            print_status "Building for production to avoid Vite ARM issues..."
+            if npm run build > /tmp/flight_tracker_build.log 2>&1; then
+                print_status "Starting static file server for built files..."
+                
+                # Try serve package first (if installed)
+                if npm list serve >/dev/null 2>&1; then
+                    print_status "Using serve package for static hosting..."
+                    nohup npm run serve > /tmp/flight_tracker_frontend.log 2>&1 &
+                    frontend_pid=$!
+                    echo $frontend_pid > "$PIDS_DIR/frontend.pid"
+                    start_success=true
+                # Fall back to Python HTTP server
+                elif command -v python3 &> /dev/null; then
+                    cd dist 2>/dev/null || cd build 2>/dev/null || { 
+                        print_error "Build directory not found. Build may have failed."
+                        cat /tmp/flight_tracker_build.log
+                        exit 1
+                    }
+                    nohup python3 -m http.server $FRONTEND_PORT --bind $FRONTEND_HOST > /tmp/flight_tracker_frontend.log 2>&1 &
+                    frontend_pid=$!
+                    echo $frontend_pid > "$PIDS_DIR/frontend.pid"
+                    start_success=true
+                    cd ..
+                    print_status "Using Python HTTP server for ARM compatibility"
+                else
+                    print_error "No suitable static server available for ARM fallback"
+                    exit 1
+                fi
+            else
+                print_error "Build failed. Check build log:"
+                cat /tmp/flight_tracker_build.log
+                exit 1
+            fi
+        fi
+    else
+        # Standard startup for non-ARM systems (x86/x64)
+        print_status "Starting frontend process..."
+        nohup npm run dev -- --host $FRONTEND_HOST --port $FRONTEND_PORT > /tmp/flight_tracker_frontend.log 2>&1 &
+        local frontend_pid=$!
+        echo $frontend_pid > "$PIDS_DIR/frontend.pid"
+        start_success=true
+        sleep 5
+    fi
     
     # Check if the process is still running
     if ! kill -0 $frontend_pid 2>/dev/null; then
