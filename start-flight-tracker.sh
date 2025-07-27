@@ -74,6 +74,63 @@ kill_by_pidfile() {
     fi
 }
 
+# Function to setup all dependencies
+setup_dependencies() {
+    print_status "Setting up Flight Tracker dependencies..."
+    
+    # Check system prerequisites
+    if ! command -v python3 &> /dev/null; then
+        print_error "Python3 is not installed. Please install Python3 first."
+        print_status "On Raspberry Pi: sudo apt update && sudo apt install python3 python3-pip python3-venv -y"
+        exit 1
+    fi
+    
+    if ! command -v npm &> /dev/null; then
+        print_error "npm is not installed. Please install Node.js and npm first."
+        print_status "On Raspberry Pi: curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && sudo apt-get install -y nodejs"
+        exit 1
+    fi
+    
+    # Setup backend dependencies
+    print_status "Setting up backend dependencies..."
+    if [ ! -d "$BACKEND_DIR" ]; then
+        print_error "Backend directory not found: $BACKEND_DIR"
+        exit 1
+    fi
+    
+    cd "$BACKEND_DIR"
+    
+    # Create virtual environment if it doesn't exist
+    if [ ! -d "venv" ]; then
+        print_status "Creating Python virtual environment..."
+        python3 -m venv venv
+    fi
+    
+    # Activate and install dependencies
+    source venv/bin/activate
+    if [ -f "requirements.txt" ]; then
+        print_status "Installing Python dependencies..."
+        pip install --upgrade pip
+        pip install -r requirements.txt
+    fi
+    
+    # Setup frontend dependencies
+    print_status "Setting up frontend dependencies..."
+    if [ ! -d "$FRONTEND_DIR" ]; then
+        print_error "Frontend directory not found: $FRONTEND_DIR"
+        exit 1
+    fi
+    
+    cd "$FRONTEND_DIR"
+    if [ ! -d "node_modules" ] || [ ! -f "package-lock.json" ]; then
+        print_status "Installing Node.js dependencies..."
+        npm install
+    fi
+    
+    print_success "All dependencies installed successfully!"
+    print_status "You can now run: $0 start"
+}
+
 # Function to start the backend
 start_backend() {
     print_status "Starting Flight Tracker Backend..."
@@ -97,9 +154,25 @@ start_backend() {
         exit 1
     fi
     
-    # Start backend in background
     cd "$BACKEND_DIR"
-    nohup python3 main.py --host $BACKEND_HOST --port $BACKEND_PORT > /tmp/flight_tracker_backend.log 2>&1 &
+    
+    # Check if virtual environment exists and create if needed
+    if [ ! -d "venv" ]; then
+        print_status "Creating Python virtual environment for backend..."
+        python3 -m venv venv
+    fi
+    
+    # Activate virtual environment
+    source venv/bin/activate
+    
+    # Install/update dependencies if requirements.txt exists
+    if [ -f "requirements.txt" ]; then
+        print_status "Installing/updating backend dependencies..."
+        pip install -r requirements.txt
+    fi
+    
+    # Start backend in background
+    nohup ./venv/bin/python main.py --host $BACKEND_HOST --port $BACKEND_PORT > /tmp/flight_tracker_backend.log 2>&1 &
     echo $! > "$PIDS_DIR/backend.pid"
     
     # Wait for backend to start
@@ -256,6 +329,7 @@ show_help() {
     echo "Usage: $0 [OPTION]"
     echo
     echo "Options:"
+    echo "  setup      Install all dependencies (run this first on new systems)"
     echo "  start      Start backend and frontend services"
     echo "  stop       Stop all running services"
     echo "  restart    Restart all services"
@@ -263,6 +337,10 @@ show_help() {
     echo "  test       Test the raspi client"
     echo "  logs       Show recent logs"
     echo "  help       Show this help message"
+    echo
+    echo "First Time Setup:"
+    echo "  1. Run: $0 setup"
+    echo "  2. Run: $0 start"
     echo
     echo "Network Access:"
     echo "  Services will be accessible from other machines on the network"
@@ -296,6 +374,9 @@ show_logs() {
 
 # Main script logic
 case "${1:-start}" in
+    "setup")
+        setup_dependencies
+        ;;
     "start")
         print_status "Starting Flight Tracker System..."
         start_backend
