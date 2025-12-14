@@ -2,3 +2,6 @@ streamlit
 requests
 pandas
 datetime
+PyQt6  # For development GUI mode
+Pillow  # For image handling
+toml    # For config file parsing
