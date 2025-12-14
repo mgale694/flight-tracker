@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import type { Config, ConfigUpdate } from '../types';
 import { api } from '../api';
+import DisplayFieldSelector from './DisplayFieldSelector';
 import './Settings.css';
 
 interface SettingsProps {
@@ -183,29 +184,12 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
         <div className="form-group">
           <label>
             E-ink Display Fields
-            <span className="label-hint">Choose which fields to display on e-ink screen</span>
+            <span className="label-hint">Choose up to 5 fields • Drag to reorder</span>
           </label>
-          <div className="checkbox-group">
-            {['FROM', 'TO', 'AIRLINE', 'MODEL', 'REG', 'ROUTE'].map(field => (
-              <label key={field} className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={formData.display_fields?.includes(field) || false}
-                  onChange={(e) => {
-                    const currentFields = formData.display_fields || [];
-                    const newFields = e.target.checked
-                      ? [...currentFields, field]
-                      : currentFields.filter(f => f !== field);
-                    handleInputChange('display_fields', newFields);
-                  }}
-                />
-                <span>{field}</span>
-              </label>
-            ))}
-          </div>
-          <div className="field-order">
-            <small>Display order: {formData.display_fields?.join(' → ') || 'None selected'}</small>
-          </div>
+          <DisplayFieldSelector
+            selectedFields={formData.display_fields || []}
+            onChange={(fields) => handleInputChange('display_fields', fields)}
+          />
         </div>
         
         <div className="form-actions">

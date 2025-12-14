@@ -88,22 +88,60 @@ class FlightView:
         origin_route = origin_name if origin_name and origin_name != origin_code else origin_code
         dest_route = dest_name if dest_name and dest_name != dest_code else dest_code
         
-        # Map field names to their display strings with all available options
+        # Map all available field IDs to their display strings
         field_data = {
+            # Basic fields (user-friendly names)
             "FROM": truncate_string(f"FROM: {origin_display}", 32),
             "TO": truncate_string(f"TO: {dest_display}", 32),
             "AIRLINE": f"AIRLINE: {safe_getattr(flight, 'airline_name', None) or safe_getattr(flight, 'airline', 'N/A')}",
-            "AIRLINE_SHORT": f"AIRLINE: {safe_getattr(flight, 'airline_short_name', None) or safe_getattr(flight, 'airline', 'N/A')}",
             "MODEL": f"MODEL: {safe_getattr(flight, 'aircraft_model', None) or safe_getattr(flight, 'aircraft', 'Unknown')}",
-            "AIRCRAFT_CODE": f"TYPE: {safe_getattr(flight, 'aircraft_code', None) or safe_getattr(flight, 'aircraft', 'Unknown')}",
             "REG": f"REG: {safe_getattr(flight, 'registration', 'N/A')}",
             "ROUTE": f"{origin_route} -> {dest_route}",
-            "CALLSIGN": f"CALLSIGN: {safe_getattr(flight, 'callsign', 'N/A')}",
-            "SQUAWK": f"SQUAWK: {safe_getattr(flight, 'squawk', 'N/A')}",
-            "STATUS": f"STATUS: {safe_getattr(flight, 'status_text', 'N/A')}",
-            "VERTICAL_SPEED": f"V/S: {safe_getattr(flight, 'vertical_speed', 'N/A')} fpm",
-            "ORIGIN_COUNTRY": f"FROM: {safe_getattr(flight, 'origin_airport_country_name', None) or origin_code}",
-            "DEST_COUNTRY": f"TO: {safe_getattr(flight, 'destination_airport_country_name', None) or dest_code}",
+            
+            # API field mappings (snake_case from backend)
+            "id": f"ID: {safe_getattr(flight, 'id', 'N/A')}",
+            "icao_24bit": f"ICAO: {safe_getattr(flight, 'icao_24bit', 'N/A')}",
+            "callsign": f"CALLSIGN: {safe_getattr(flight, 'callsign', 'N/A')}",
+            "number": f"FLIGHT: {safe_getattr(flight, 'number', 'N/A')}",
+            "registration": f"REG: {safe_getattr(flight, 'registration', 'N/A')}",
+            
+            "aircraft": f"AIRCRAFT: {safe_getattr(flight, 'aircraft', 'Unknown')}",
+            "aircraft_code": f"TYPE: {safe_getattr(flight, 'aircraft_code', 'N/A')}",
+            "aircraft_model": f"MODEL: {safe_getattr(flight, 'aircraft_model', 'N/A')}",
+            "aircraft_age": f"AGE: {safe_getattr(flight, 'aircraft_age', 'N/A')}",
+            
+            "airline": f"AIRLINE: {safe_getattr(flight, 'airline', 'N/A')}",
+            "airline_name": f"AIRLINE: {safe_getattr(flight, 'airline_name', 'N/A')}",
+            "airline_short_name": f"AIRLINE: {safe_getattr(flight, 'airline_short_name', 'N/A')}",
+            "airline_iata": f"AL IATA: {safe_getattr(flight, 'airline_iata', 'N/A')}",
+            "airline_icao": f"AL ICAO: {safe_getattr(flight, 'airline_icao', 'N/A')}",
+            
+            "origin": f"FROM: {origin_code}",
+            "origin_name": truncate_string(f"FROM: {origin_display}", 32),
+            "origin_airport_icao": f"ORIG ICAO: {safe_getattr(flight, 'origin_airport_icao', 'N/A')}",
+            "origin_airport_country_name": f"FROM: {safe_getattr(flight, 'origin_airport_country_name', 'N/A')}",
+            "origin_airport_gate": f"GATE: {safe_getattr(flight, 'origin_airport_gate', 'N/A')}",
+            "origin_airport_terminal": f"TERM: {safe_getattr(flight, 'origin_airport_terminal', 'N/A')}",
+            
+            "destination": f"TO: {dest_code}",
+            "destination_name": truncate_string(f"TO: {dest_display}", 32),
+            "destination_airport_icao": f"DEST ICAO: {safe_getattr(flight, 'destination_airport_icao', 'N/A')}",
+            "destination_airport_country_name": f"TO: {safe_getattr(flight, 'destination_airport_country_name', 'N/A')}",
+            "destination_airport_gate": f"GATE: {safe_getattr(flight, 'destination_airport_gate', 'N/A')}",
+            "destination_airport_terminal": f"TERM: {safe_getattr(flight, 'destination_airport_terminal', 'N/A')}",
+            "destination_airport_baggage": f"BAG: {safe_getattr(flight, 'destination_airport_baggage', 'N/A')}",
+            
+            "altitude": f"ALT: {safe_getattr(flight, 'altitude', 'N/A')} ft",
+            "speed": f"SPD: {safe_getattr(flight, 'speed', 'N/A')} kts",
+            "heading": f"HDG: {safe_getattr(flight, 'heading', 'N/A')}°",
+            "vertical_speed": f"V/S: {safe_getattr(flight, 'vertical_speed', 'N/A')} fpm",
+            "squawk": f"SQUAWK: {safe_getattr(flight, 'squawk', 'N/A')}",
+            "on_ground": f"GROUND: {safe_getattr(flight, 'on_ground', 'N/A')}",
+            "status_text": f"STATUS: {safe_getattr(flight, 'status_text', 'N/A')}",
+            
+            "distance": f"DIST: {safe_getattr(flight, 'distance', 'N/A')} m",
+            "latitude": f"LAT: {safe_getattr(flight, 'latitude', 'N/A')}",
+            "longitude": f"LON: {safe_getattr(flight, 'longitude', 'N/A')}",
         }
         
         # Render configured fields dynamically
