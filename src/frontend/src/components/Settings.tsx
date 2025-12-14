@@ -92,32 +92,6 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
     }
   };
 
-  const handleShutdown = async () => {
-    if (!window.confirm('⚠️ Are you sure you want to shutdown the flight tracker system? This will stop all services.')) {
-      return;
-    }
-    
-    try {
-      setSaving(true);
-      setError(null);
-      const result = await api.shutdownSystem();
-      
-      if (result.status === 'success') {
-        setSuccess(true);
-        setError(null);
-        // Show message for a bit longer since system is shutting down
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 3000);
-      } else {
-        setError(result.message);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to shutdown system');
-      setSaving(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="settings-loading">
@@ -258,7 +232,7 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
       </form>
       
       <div className="system-controls">
-        <h3>System Controls</h3>
+        <h3>Display Controls</h3>
         <div className="control-buttons">
           <button 
             type="button" 
@@ -267,15 +241,6 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
             disabled={saving}
           >
             🖥️ Clear Display
-          </button>
-          
-          <button 
-            type="button" 
-            className="btn btn-danger"
-            onClick={handleShutdown}
-            disabled={saving}
-          >
-            🔴 Shutdown System
           </button>
         </div>
       </div>
