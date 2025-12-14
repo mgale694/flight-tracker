@@ -87,8 +87,8 @@ class FlightView:
         field_data = {
             "FROM": truncate_string(f"FROM: {origin_display}", 32),
             "TO": truncate_string(f"TO: {dest_display}", 32),
-            "AIRLINE": f"AIRLINE: {safe_getattr(flight, 'airline', 'N/A')}",
-            "MODEL": f"MODEL: {safe_getattr(flight, 'aircraft', 'Unknown')}",
+            "AIRLINE": f"AIRLINE: {safe_getattr(flight, 'airline_name', 'N/A')}",
+            "MODEL": f"MODEL: {safe_getattr(flight, 'aircraft_model', 'Unknown')}",
             "REG": f"REG: {safe_getattr(flight, 'registration', 'N/A')}",
             "ROUTE": f"{origin_route} -> {dest_route}"
         }
