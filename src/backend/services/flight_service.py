@@ -111,10 +111,12 @@ class FlightTrackerService:
                     if distance <= radius_meters:
                         # Fetch detailed flight information to get airport names, airline names, etc.
                         try:
-                            flight_details = self.fr_api.get_flight_details(flight.id)
-                            if flight_details:
-                                flight.set_flight_details(flight_details)
-                                print(f"✓ Got details for {flight.callsign}: {getattr(flight, 'airline_name', 'N/A')}, {getattr(flight, 'origin_airport_name', 'N/A')} → {getattr(flight, 'destination_airport_name', 'N/A')}")
+                            flight_id = getattr(flight, 'id', None)
+                            if flight_id:
+                                flight_details = self.fr_api.get_flight_details(flight_id)
+                                if flight_details:
+                                    flight.set_flight_details(flight_details)
+                                    print(f"✓ Got details for {getattr(flight, 'callsign', 'unknown')}: {getattr(flight, 'airline_name', 'N/A')}, {getattr(flight, 'origin_airport_name', 'N/A')} → {getattr(flight, 'destination_airport_name', 'N/A')}")
                         except Exception as detail_error:
                             print(f"⚠ Could not fetch details for {getattr(flight, 'callsign', 'unknown')}: {detail_error}")
                         
