@@ -137,26 +137,77 @@ class FlightTrackerService:
             distance: Distance from tracking point in meters
             
         Returns:
-            Parsed flight data dictionary
+            Parsed flight data dictionary with comprehensive information
         """
         origin_code = getattr(flight, 'origin_airport_iata', 'N/A') or 'N/A'
         dest_code = getattr(flight, 'destination_airport_iata', 'N/A') or 'N/A'
         
         return {
+            # Basic identification
             "id": getattr(flight, 'id', 'N/A'),
+            "icao_24bit": getattr(flight, 'icao_24bit', None),
             "callsign": getattr(flight, 'callsign', 'N/A') or getattr(flight, 'number', 'N/A'),
+            "number": getattr(flight, 'number', None),
             "registration": getattr(flight, 'registration', 'N/A') or 'N/A',
+            
+            # Aircraft information
             "aircraft": getattr(flight, 'aircraft_model', None) or getattr(flight, 'aircraft_code', 'Unknown') or 'Unknown',
-            "airline": getattr(flight, 'airline_name', None) or self._extract_airline(getattr(flight, 'callsign', '') or ''),
+            "aircraft_code": getattr(flight, 'aircraft_code', None),
+            "aircraft_model": getattr(flight, 'aircraft_model', None),
+            "aircraft_age": getattr(flight, 'aircraft_age', None),
+            "aircraft_country_id": getattr(flight, 'aircraft_country_id', None),
+            
+            # Airline information
+            "airline": getattr(flight, 'airline_name', None) or getattr(flight, 'airline_short_name', None) or self._extract_airline(getattr(flight, 'callsign', '') or ''),
+            "airline_name": getattr(flight, 'airline_name', None),
+            "airline_short_name": getattr(flight, 'airline_short_name', None),
+            "airline_iata": getattr(flight, 'airline_iata', None),
+            "airline_icao": getattr(flight, 'airline_icao', None),
+            
+            # Origin airport
             "origin": origin_code,
-            "destination": dest_code,
             "origin_name": getattr(flight, 'origin_airport_name', None) or origin_code,
+            "origin_airport_iata": origin_code,
+            "origin_airport_icao": getattr(flight, 'origin_airport_icao', None),
+            "origin_airport_country_code": getattr(flight, 'origin_airport_country_code', None),
+            "origin_airport_country_name": getattr(flight, 'origin_airport_country_name', None),
+            "origin_airport_latitude": getattr(flight, 'origin_airport_latitude', None),
+            "origin_airport_longitude": getattr(flight, 'origin_airport_longitude', None),
+            "origin_airport_altitude": getattr(flight, 'origin_airport_altitude', None),
+            "origin_airport_gate": getattr(flight, 'origin_airport_gate', None),
+            "origin_airport_terminal": getattr(flight, 'origin_airport_terminal', None),
+            
+            # Destination airport
+            "destination": dest_code,
             "destination_name": getattr(flight, 'destination_airport_name', None) or dest_code,
+            "destination_airport_iata": dest_code,
+            "destination_airport_icao": getattr(flight, 'destination_airport_icao', None),
+            "destination_airport_country_code": getattr(flight, 'destination_airport_country_code', None),
+            "destination_airport_country_name": getattr(flight, 'destination_airport_country_name', None),
+            "destination_airport_latitude": getattr(flight, 'destination_airport_latitude', None),
+            "destination_airport_longitude": getattr(flight, 'destination_airport_longitude', None),
+            "destination_airport_altitude": getattr(flight, 'destination_airport_altitude', None),
+            "destination_airport_gate": getattr(flight, 'destination_airport_gate', None),
+            "destination_airport_terminal": getattr(flight, 'destination_airport_terminal', None),
+            "destination_airport_baggage": getattr(flight, 'destination_airport_baggage', None),
+            
+            # Flight status and position
             "altitude": int(getattr(flight, 'altitude', 0) or 0),
             "speed": int(getattr(flight, 'ground_speed', 0) or 0),
+            "ground_speed": int(getattr(flight, 'ground_speed', 0) or 0),
             "heading": int(getattr(flight, 'heading', 0) or 0),
+            "vertical_speed": getattr(flight, 'vertical_speed', None),
+            "squawk": getattr(flight, 'squawk', None),
+            "on_ground": getattr(flight, 'on_ground', None),
             "latitude": float(getattr(flight, 'latitude', 0.0)),
             "longitude": float(getattr(flight, 'longitude', 0.0)),
+            
+            # Status information
+            "status_text": getattr(flight, 'status_text', None),
+            "status_icon": getattr(flight, 'status_icon', None),
+            
+            # Time and tracking
+            "time": getattr(flight, 'time', None),
             "distance": round(distance, 2),
             "timestamp": datetime.utcnow().isoformat() + "Z"
         }

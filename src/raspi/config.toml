@@ -12,6 +12,10 @@ max_flights = 20
 boot_screen_duration = 10
 flight_rotation_interval = 5
 display_enabled = true
+# Display fields: Choose up to 5 fields to show on e-ink display
+# Available fields: FROM, TO, AIRLINE, AIRLINE_SHORT, MODEL, AIRCRAFT_CODE, REG, ROUTE, 
+#                   CALLSIGN, SQUAWK, STATUS, VERTICAL_SPEED, ORIGIN_COUNTRY, DEST_COUNTRY
+display_fields = ["FROM", "AIRLINE", "MODEL", "REG", "ROUTE"]
 
 [ui.display]
 enabled = true

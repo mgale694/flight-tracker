@@ -16,9 +16,14 @@ class FlightView:
         self.height = display.height
         self.config = config or {}
         
-        # Get display fields from config, default to all fields
+        # Get display fields from config (try both main and ui sections)
         main_config = self.config.get("main", {})
-        self.display_fields = main_config.get("display_fields", ["FROM", "AIRLINE", "MODEL", "REG", "ROUTE"])
+        ui_config = self.config.get("ui", {})
+        self.display_fields = (
+            main_config.get("display_fields") or 
+            ui_config.get("display_fields") or 
+            ["FROM", "AIRLINE", "MODEL", "REG", "ROUTE"]
+        )[:5]  # Limit to 5 fields max
 
     def render_boot_screen(self, face, phrase):
         """Render boot screen with face and phrase"""
@@ -63,9 +68,9 @@ class FlightView:
         draw.line((-5, 15, self.width, 15), fill=0, width=1)
 
         # Prepare field data
-        origin_name = safe_getattr(flight, 'origin_airport_name', None)
+        origin_name = safe_getattr(flight, 'origin_name', None)
         origin_code = safe_getattr(flight, 'origin', 'N/A')
-        dest_name = safe_getattr(flight, 'destination_airport_name', None)
+        dest_name = safe_getattr(flight, 'destination_name', None)
         dest_code = safe_getattr(flight, 'destination', 'N/A')
         
         # Display full name with code, or just code if name not available
@@ -83,14 +88,22 @@ class FlightView:
         origin_route = origin_name if origin_name and origin_name != origin_code else origin_code
         dest_route = dest_name if dest_name and dest_name != dest_code else dest_code
         
-        # Map field names to their display strings
+        # Map field names to their display strings with all available options
         field_data = {
             "FROM": truncate_string(f"FROM: {origin_display}", 32),
             "TO": truncate_string(f"TO: {dest_display}", 32),
-            "AIRLINE": f"AIRLINE: {safe_getattr(flight, 'airline_name', 'N/A')}",
-            "MODEL": f"MODEL: {safe_getattr(flight, 'aircraft_model', 'Unknown')}",
+            "AIRLINE": f"AIRLINE: {safe_getattr(flight, 'airline_name', None) or safe_getattr(flight, 'airline', 'N/A')}",
+            "AIRLINE_SHORT": f"AIRLINE: {safe_getattr(flight, 'airline_short_name', None) or safe_getattr(flight, 'airline', 'N/A')}",
+            "MODEL": f"MODEL: {safe_getattr(flight, 'aircraft_model', None) or safe_getattr(flight, 'aircraft', 'Unknown')}",
+            "AIRCRAFT_CODE": f"TYPE: {safe_getattr(flight, 'aircraft_code', None) or safe_getattr(flight, 'aircraft', 'Unknown')}",
             "REG": f"REG: {safe_getattr(flight, 'registration', 'N/A')}",
-            "ROUTE": f"{origin_route} -> {dest_route}"
+            "ROUTE": f"{origin_route} -> {dest_route}",
+            "CALLSIGN": f"CALLSIGN: {safe_getattr(flight, 'callsign', 'N/A')}",
+            "SQUAWK": f"SQUAWK: {safe_getattr(flight, 'squawk', 'N/A')}",
+            "STATUS": f"STATUS: {safe_getattr(flight, 'status_text', 'N/A')}",
+            "VERTICAL_SPEED": f"V/S: {safe_getattr(flight, 'vertical_speed', 'N/A')} fpm",
+            "ORIGIN_COUNTRY": f"FROM: {safe_getattr(flight, 'origin_airport_country_name', None) or origin_code}",
+            "DEST_COUNTRY": f"TO: {safe_getattr(flight, 'destination_airport_country_name', None) or dest_code}",
         }
         
         # Render configured fields dynamically
@@ -122,15 +135,6 @@ class FlightView:
             (155, self.height - 12), f"TIME: {timestamp}", font=fonts.Small, fill=0
         )
 
-        # Rotate for hardware displays
-        rotated_image = image.rotate(180)
-        self.display.render(rotated_image)
-
-    def render_blank_screen(self):
-        """Render a completely blank white screen"""
-        # Create a blank white image (255 = white for 1-bit displays)
-        image = Image.new("1", (self.width, self.height), 255)
-        
         # Rotate for hardware displays
         rotated_image = image.rotate(180)
         self.display.render(rotated_image)
