@@ -111,27 +111,15 @@ class FlightTrackerService:
                     if distance <= radius_meters:
                         # Fetch detailed flight information to get airport names, airline names, etc.
                         try:
-                            flight_id = getattr(flight, 'id', None)
-                            if flight_id:
-                                print(f"🔍 Fetching details for flight ID: {flight_id}")
-                                flight_details = self.fr_api.get_flight_details(flight_id)
-                                if flight_details:
-                                    print(f"📦 Raw flight details type: {type(flight_details)}")
-                                    print(f"📦 Flight details keys: {flight_details.keys() if hasattr(flight_details, 'keys') else 'N/A'}")
-                                    flight.set_flight_details(flight_details)
-                                    
-                                    # Check what attributes are actually available after set_flight_details
-                                    print(f"🔍 Checking attributes after set_flight_details:")
-                                    print(f"   - origin_airport_name: {getattr(flight, 'origin_airport_name', 'NOT FOUND')}")
-                                    print(f"   - destination_airport_name: {getattr(flight, 'destination_airport_name', 'NOT FOUND')}")
-                                    print(f"   - airline_name: {getattr(flight, 'airline_name', 'NOT FOUND')}")
-                                    print(f"   - All flight attributes: {[a for a in dir(flight) if not a.startswith('_')]}")
-                                else:
-                                    print(f"⚠ get_flight_details returned None for {flight_id}")
+                            # get_flight_details expects the Flight object, not just the ID
+                            flight_details = self.fr_api.get_flight_details(flight)
+                            if flight_details:
+                                flight.set_flight_details(flight_details)
+                                print(f"✓ Got details for {getattr(flight, 'callsign', 'unknown')}: {getattr(flight, 'airline_name', 'N/A')}, {getattr(flight, 'origin_airport_name', 'N/A')} → {getattr(flight, 'destination_airport_name', 'N/A')}")
+                            else:
+                                print(f"⚠ No details available for {getattr(flight, 'callsign', 'unknown')}")
                         except Exception as detail_error:
                             print(f"⚠ Could not fetch details for {getattr(flight, 'callsign', 'unknown')}: {detail_error}")
-                            import traceback
-                            print(f"   Traceback: {traceback.format_exc()}")
                         
                         # Parse flight data from Flight object
                         flight_info = self._parse_flight_object(flight, distance)
