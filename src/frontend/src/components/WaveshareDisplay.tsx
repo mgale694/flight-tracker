@@ -3,7 +3,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import type { Flight, Config } from '../types';
+import type { Flight } from '../types';
 import { api } from '../api';
 import './WaveshareDisplay.css';
 
