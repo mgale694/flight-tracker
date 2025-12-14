@@ -73,6 +73,51 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleClearDisplay = async () => {
+    if (!window.confirm('Clear the e-ink display?')) {
+      return;
+    }
+    
+    try {
+      setSaving(true);
+      setError(null);
+      const result = await api.clearDisplay();
+      setSuccess(true);
+      setError(result.status === 'error' ? result.message : null);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to clear display');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleShutdown = async () => {
+    if (!window.confirm('⚠️ Are you sure you want to shutdown the flight tracker system? This will stop all services.')) {
+      return;
+    }
+    
+    try {
+      setSaving(true);
+      setError(null);
+      const result = await api.shutdownSystem();
+      
+      if (result.status === 'success') {
+        setSuccess(true);
+        setError(null);
+        // Show message for a bit longer since system is shutting down
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 3000);
+      } else {
+        setError(result.message);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to shutdown system');
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="settings-loading">
@@ -211,6 +256,29 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
           </button>
         </div>
       </form>
+      
+      <div className="system-controls">
+        <h3>System Controls</h3>
+        <div className="control-buttons">
+          <button 
+            type="button" 
+            className="btn btn-warning"
+            onClick={handleClearDisplay}
+            disabled={saving}
+          >
+            🖥️ Clear Display
+          </button>
+          
+          <button 
+            type="button" 
+            className="btn btn-danger"
+            onClick={handleShutdown}
+            disabled={saving}
+          >
+            🔴 Shutdown System
+          </button>
+        </div>
+      </div>
       
       {config && (
         <div className="current-config">

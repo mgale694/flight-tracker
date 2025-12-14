@@ -109,6 +109,24 @@ class APIClient {
       method: 'DELETE',
     });
   }
+
+  /**
+   * Clear the e-ink display
+   */
+  async clearDisplay(): Promise<{ status: string; message: string }> {
+    return this.fetchJSON('/api/system/clear-display', {
+      method: 'POST',
+    });
+  }
+
+  /**
+   * Shutdown the flight tracker system
+   */
+  async shutdownSystem(): Promise<{ status: string; message: string }> {
+    return this.fetchJSON('/api/system/shutdown', {
+      method: 'POST',
+    });
+  }
 }
 
 // Export singleton instance

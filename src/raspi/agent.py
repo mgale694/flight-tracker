@@ -39,9 +39,10 @@ class FlightTrackerAgent:
         self.running = False
         self.current_flight_index = 0
         
-        # Setup signal handlers for graceful shutdown
+        # Setup signal handlers for graceful shutdown and display clear
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
+        signal.signal(signal.SIGUSR1, self._clear_display_handler)
     
     def _load_config(self, config_path):
         """Load configuration from TOML file"""
@@ -117,6 +118,19 @@ class FlightTrackerAgent:
         logging.info(f"Received signal {signum}, initiating shutdown...")
         self.shutdown()
         sys.exit(0)
+    
+    def _clear_display_handler(self, signum, frame):
+        """Handle SIGUSR1 signal to clear display"""
+        logging.info("Received display clear signal")
+        if self.display.is_enabled():
+            try:
+                logging.info("Clearing display...")
+                self.display.render_blank()
+                time.sleep(1)
+                self.display.clear()
+                logging.info("Display cleared successfully")
+            except Exception as e:
+                logging.error(f"Error clearing display: {e}")
     
     def shutdown(self):
         """Graceful shutdown"""
