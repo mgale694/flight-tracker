@@ -1,5 +1,5 @@
 [main]
-address = "31 Maltings Place, London, SW62BU"
+address = "10 Downing St, London SW1A 2AA"
 search_radius_meters = 3000
 max_flights = 20
 max_elapsed_time = 1800
