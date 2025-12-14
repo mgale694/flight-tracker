@@ -96,7 +96,7 @@ class FlightView:
             "AIRLINE": f"AIRLINE: {safe_getattr(flight, 'airline_name', None) or safe_getattr(flight, 'airline', 'N/A')}",
             "MODEL": f"MODEL: {safe_getattr(flight, 'aircraft_model', None) or safe_getattr(flight, 'aircraft', 'Unknown')}",
             "REG": f"REG: {safe_getattr(flight, 'registration', 'N/A')}",
-            "ROUTE": f"{origin_route} → {dest_route}",
+            "ROUTE": f"{origin_route} -> {dest_route}",
             
             # API field mappings (snake_case from backend)
             "id": f"ID: {safe_getattr(flight, 'id', 'N/A')}",
