@@ -13,6 +13,19 @@ echo ""
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
+# Function to show status on display
+show_display_status() {
+    local message="$1"
+    local step="$2"
+    local total="$3"
+    
+    if [ -n "$step" ] && [ -n "$total" ]; then
+        python3 "$PROJECT_ROOT/src/raspi/startup_status.py" "$message" "$step" "$total" 2>/dev/null || true
+    else
+        python3 "$PROJECT_ROOT/src/raspi/startup_status.py" "$message" 2>/dev/null || true
+    fi
+}
+
 # Colors for output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -35,12 +48,15 @@ get_local_ip() {
 
 LOCAL_IP=$(get_local_ip)
 
+show_display_status "Starting up..." 1 7
+
 echo "📋 Pre-flight Checks"
 echo "-------------------"
 
 # Check if Python is installed
 if ! command -v python3 &> /dev/null; then
     echo -e "${RED}❌ Python 3 is not installed${NC}"
+    show_display_status "ERROR: Python 3 required"
     exit 1
 fi
 echo -e "${GREEN}✅ Python 3 found${NC}"
@@ -49,11 +65,13 @@ echo -e "${GREEN}✅ Python 3 found${NC}"
 if ! command -v node &> /dev/null; then
     echo -e "${RED}❌ Node.js is not installed${NC}"
     echo "Install with: curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - && sudo apt-get install -y nodejs"
+    show_display_status "ERROR: Node.js required"
     exit 1
 fi
 echo -e "${GREEN}✅ Node.js found${NC}"
 
 echo ""
+show_display_status "Setting up backend..." 2 7
 echo "🔧 Setting up Backend"
 echo "--------------------"
 
@@ -89,6 +107,7 @@ else
 fi
 
 # Start backend in background
+show_display_status "Starting backend API..." 3 7
 echo "🌐 Starting Backend API..."
 python main.py > /tmp/flight-tracker-backend.log 2>&1 &
 BACKEND_PID=$!
@@ -110,6 +129,7 @@ for i in {1..30}; do
 done
 
 echo ""
+show_display_status "Setting up frontend..." 4 7
 echo "🔧 Setting up Frontend"
 echo "---------------------"
 
@@ -127,6 +147,7 @@ echo "✅ Frontend setup complete"
 LOCAL_IP=$(get_local_ip)
 
 # Build frontend for production with API URL pointing to Pi's IP
+show_display_status "Building frontend UI..." 5 7
 echo "🏗️  Building frontend..."
 echo "📡 API URL: http://$LOCAL_IP:8000"
 VITE_API_URL="http://$LOCAL_IP:8000" npm run build
@@ -142,6 +163,7 @@ echo "⏳ Waiting for frontend to start..."
 sleep 3
 
 echo ""
+show_display_status "Installing display drivers..." 6 7
 echo "🔧 Setting up E-ink Display Client"
 echo "----------------------------------"
 
@@ -175,6 +197,7 @@ if [ -f "requirements-pi.txt" ] && command -v raspi-config &> /dev/null; then
 fi
 
 # Start raspi client in background using the SAME Python from venv
+show_display_status "Starting flight tracker..." 7 7
 echo "🖥️  Starting E-ink Display Client..."
 python agent.py > /tmp/flight-tracker-raspi.log 2>&1 &
 RASPI_PID=$!

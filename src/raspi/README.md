@@ -9,8 +9,10 @@ This client displays real-time flight information on a Waveshare 2.13" V4 e-ink 
   - **Standalone Mode**: Uses FlightRadar24 API directly
 - **E-ink Display**: Shows flight info on Waveshare 2.13" V4 (250x122 pixels)
 - **Boot Sequence**: Fun ASCII art faces and phrases on startup
+- **Startup Status**: Shows progress during system startup
 - **Session Statistics**: Tracks flights detected and unique aircraft
 - **Auto-rotation**: Cycles through multiple flights automatically
+- **Remote Control**: Clear display and shutdown from web interface
 
 ## Hardware Requirements
 
