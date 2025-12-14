@@ -1,250 +1,346 @@
-# Frontend - React Web Dashboard
+# Flight Tracker Frontend
 
-Modern React-based web interface for the Flight Tracker system, providing a comprehensive dashboard for monitoring aircraft and managing the tracking system.
+React + TypeScript + Vite web dashboard for monitoring and configuring the flight tracker system.
 
-## 🚀 Features
+## Features
 
-- **Real-time Flight Display**: Accurate simulation of the Raspberry Pi e-ink display
-- **Flight Departure Board**: Interactive board showing flight history and status
-- **Settings Management**: Configure tracking parameters via web interface
-- **Activity Console**: View and manage system logs and events
-- **Theme Support**: Dark/light mode toggle with system preference detection
-- **Responsive Design**: Works on desktop, tablet, and mobile devices
+- **Real-time Flight Tracking**: Live updates of detected aircraft
+- **E-ink Display Simulator**: Visual representation of Waveshare 2.13" display
+- **Flight Board**: Detailed table view of all detected flights
+- **Activity Logs**: Real-time system activity monitoring
+- **Theme System**: Light, dark, and auto modes with localStorage persistence
+- **Responsive Design**: Works on desktop and mobile devices
 
-## 📁 Directory Structure
+## Requirements
 
-```
-frontend/
-├── react/                 # Main React application
-│   ├── src/
-│   │   ├── components/    # Reusable React components
-│   │   ├── pages/         # Page components (Display, Settings, Activities)
-│   │   ├── api.ts         # Backend API integration
-│   │   ├── types.ts       # TypeScript type definitions
-│   │   └── theme.ts       # Theme management utilities
-│   ├── package.json       # Dependencies and scripts
-│   └── vite.config.ts     # Vite configuration
-└── stremlit/             # Legacy Streamlit prototype (deprecated)
-```
+- Node.js 18+ and npm
+- Backend API running on http://localhost:8000 (or configured URL)
 
-## 🛠️ Installation & Setup
+## Installation
 
-### Prerequisites
+1. **Install dependencies**:
 
-- Node.js 16+ and npm (or yarn)
-- Running backend service on `http://localhost:8000`
+   ```bash
+   npm install
+   ```
 
-### Install Dependencies
+2. **Configure API URL** (optional):
+   Create a `.env` file in this directory:
+   ```env
+   VITE_API_URL=http://localhost:8000
+   ```
 
-```bash
-cd src/frontend/react
-npm install
-```
+## Usage
 
 ### Development Server
 
+**Start the dev server** (with hot reload):
+
 ```bash
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173`
+The app will be available at:
 
-### Production Build
+- Local: `http://localhost:5173`
+- Network: `http://<your-ip>:5173`
+
+**Or use the script**:
+
+```bash
+../../scripts/start-frontend.sh
+```
+
+### Build for Production
 
 ```bash
 npm run build
+```
+
+The built files will be in the `dist/` directory.
+
+### Preview Production Build
+
+```bash
 npm run preview
 ```
 
-## 🎨 Key Components
+## Project Structure
 
-### Display Page (`pages/Tracker.tsx`)
+```
+src/
+├── main.tsx                 # Application entry point
+├── App.tsx                  # Main app with routing
+├── App.css                  # App-level styles
+├── index.css                # Global styles & theme variables
+│
+├── api.ts                   # Backend API client
+├── types.ts                 # TypeScript type definitions
+├── theme.ts                 # Theme management system
+│
+├── components/              # Reusable components
+│   ├── ThemeSwitch.tsx     # Theme toggle component
+│   ├── WaveshareDisplay.tsx # E-ink display simulator
+│   ├── FlightBoard.tsx     # Flight table component
+│   ├── Settings.tsx        # Configuration form
+│   └── *.css               # Component-specific styles
+│
+└── pages/                   # Page components
+    ├── Tracker.tsx         # Main tracker page
+    ├── Activities.tsx      # Activity logs page
+    └── *.css               # Page-specific styles
+```
 
-- **WaveshareDisplay**: Pixel-perfect e-ink display simulation
-- **FlightBoard**: Real-time departure board with flight history
-- **Connection Status**: Backend connectivity monitoring
-- **Rotation System**: Automatic cycling through detected flights
+## Pages
 
-### Settings Page (`pages/Settings.tsx`)
+### Tracker Page (`/`)
 
-- **Location Configuration**: Address and search radius settings
-- **Flight Limits**: Maximum flights and session time controls
-- **Real-time Updates**: Settings sync with backend immediately
-- **Validation**: Input validation and error handling
+The main dashboard showing:
 
-### Activities Page (`pages/Activities.tsx`)
+- **E-ink Display Simulator**: Mimics the Waveshare 2.13" display (250x122px)
+  - Shows one flight at a time
+  - Rotates through detected flights every 5 seconds
+  - Displays scan screen when no flights detected
+  - Shows session statistics
+- **Flight Board**: Table view of all detected flights with sortable columns
+- **Settings Panel**: Update tracking configuration
+  - Location address
+  - Search radius
+  - Maximum flights
+- **Session Statistics**: Flights detected, unique aircraft, session duration
 
-- **Log Console**: Terminal-style activity log viewer
-- **Filtering**: Filter by log level and search functionality
-- **Real-time Updates**: Auto-refresh backend logs every 5 seconds
-- **Export**: Download logs as text files
-- **Log Management**: Clear logs from both frontend and backend
+### Activities Page (`/activities`)
 
-### Theme System (`theme.ts`)
+Real-time activity log viewer with:
 
-- **CSS Custom Properties**: Centralized color and spacing system
-- **Dark/Light Modes**: Comprehensive theme switching
-- **System Preference**: Automatic detection of OS theme preference
-- **Persistent Settings**: Theme choice saved to localStorage
+- **Auto-refresh**: Toggle automatic updates (every 3 seconds)
+- **Category Filter**: Filter by SYSTEM, RADAR, FLIGHT, CONFIG, ERROR, INFO
+- **Detailed View**: Expandable details for each activity
+- **Clear Logs**: Button to clear all activities
+- **Color Coding**: Visual category identification
 
-## 🔌 API Integration
+## Features
 
-### FlightTrackerAPI Class (`api.ts`)
+### Theme System
 
-Handles all backend communication:
+Three theme modes:
+
+- **Light**: Traditional light theme
+- **Dark**: Traditional dark theme
+- **Auto**: Follows system preferences
+
+Theme preference is saved in localStorage and persists across sessions.
+
+### Real-time Updates
+
+- **Flight Data**: Polls backend every 5 seconds
+- **Activity Logs**: Polls backend every 3 seconds (when auto-refresh enabled)
+- **Display Rotation**: Cycles through flights every 5 seconds
+
+### E-ink Display Simulator
+
+Accurately simulates the Waveshare 2.13" V4 display:
+
+- **Resolution**: 250x122 pixels
+- **Aspect Ratio**: Preserved
+- **Monochrome**: Black and white only
+- **Content**: Matches actual e-ink display layout
+
+## API Integration
+
+The frontend communicates with the backend API:
+
+### Endpoints Used
+
+- `GET /api/flights` - Get current flights
+- `GET /api/config` - Get configuration
+- `PUT /api/config` - Update configuration
+- `GET /api/activities` - Get activity logs
+- `DELETE /api/activities` - Clear activity logs
+- `GET /api/health` - Health check
+
+### API Client
+
+Located in `src/api.ts`, provides typed methods for all backend endpoints:
 
 ```typescript
-// Get current flights
-const response = await FlightTrackerAPI.getFlights();
+import { api } from "./api";
 
-// Update configuration
-await FlightTrackerAPI.updateConfig(newConfig);
+// Get flights
+const flights = await api.getFlights();
 
-// Fetch activity logs
-const logs = await FlightTrackerAPI.getActivityLogs();
+// Update config
+await api.updateConfig({
+  address: "New York, NY",
+  search_radius_meters: 5000,
+});
+
+// Get activities
+const activities = await api.getActivities(100, "FLIGHT");
 ```
 
-### Smart Base URL Detection
+## Development
 
-Automatically detects the correct backend URL:
+### TypeScript
 
-- Development: `http://localhost:8000`
-- Network access: Uses current hostname with port 8000
-- Environment override: `VITE_API_BASE_URL`
+Full TypeScript support with strict type checking. All API responses and component props are typed.
 
-## 🎯 State Management
+### Component Structure
 
-### React State Patterns
+Components follow a consistent structure:
 
-- **Local State**: Component-specific state with `useState`
-- **Effect Hooks**: Data fetching and cleanup with `useEffect`
-- **Refs**: DOM manipulation and interval management with `useRef`
+1. Interface definitions
+2. Component function
+3. JSX return
+4. Default export
 
-### Data Flow
+### Styling
 
+- **Global styles**: `index.css` with CSS custom properties for theming
+- **Component styles**: Scoped CSS files alongside components
+- **Theme variables**: All colors use CSS custom properties
+- **Responsive**: Mobile-first approach with media queries
+
+### Best Practices
+
+- Use TypeScript interfaces for all props
+- Include error handling in all API calls
+- Show loading states during async operations
+- Provide user feedback for actions
+- Keep components focused and reusable
+
+## Configuration
+
+### Environment Variables
+
+Create a `.env` file:
+
+```env
+# Backend API URL (default: http://localhost:8000)
+VITE_API_URL=http://localhost:8000
 ```
-Backend API → Frontend State → Component Rendering → User Interaction → API Updates
-```
-
-### Polling Strategy
-
-- **Flight Data**: 5-second intervals for real-time updates
-- **Activity Logs**: 5-second intervals for log synchronization
-- **Health Checks**: Integrated with flight polling for connectivity status
-
-## 🎨 Styling Architecture
-
-### CSS Custom Properties
-
-Centralized design system using CSS variables:
-
-```css
-:root {
-  --primary-color: #007acc;
-  --bg-primary: #ffffff;
-  --text-primary: #333333;
-  /* ... */
-}
-
-[data-theme="dark"] {
-  --bg-primary: #1a1a1a;
-  --text-primary: #ffffff;
-  /* ... */
-}
-```
-
-### Component Styles
-
-- **Modular CSS**: Each component has its own stylesheet
-- **BEM Methodology**: Consistent naming conventions
-- **Responsive Design**: Mobile-first approach with breakpoints
-
-### Theme Implementation
-
-- **Automatic Switching**: JavaScript-based theme application
-- **Smooth Transitions**: CSS transitions for theme changes
-- **System Integration**: Respects OS dark mode preference
-
-## 📱 Responsive Design
-
-### Breakpoints
-
-- **Mobile**: < 768px
-- **Tablet**: 768px - 1024px
-- **Desktop**: > 1024px
-
-### Adaptive Features
-
-- **Navigation**: Collapsible mobile menu
-- **Display**: Responsive e-ink display scaling
-- **Tables**: Horizontal scrolling on mobile
-- **Controls**: Touch-friendly button sizing
-
-## 🔧 Development Tools
 
 ### Vite Configuration
 
-- **Fast HMR**: Hot module replacement for rapid development
-- **TypeScript**: Full TypeScript support with type checking
-- **CSS Processing**: PostCSS with autoprefixer
-- **Build Optimization**: Tree shaking and code splitting
+Edit `vite.config.ts` to customize:
 
-### TypeScript Integration
+- Port number
+- Proxy settings
+- Build options
 
-- **Strict Mode**: Enhanced type safety
-- **API Types**: Shared types for backend communication
-- **Component Props**: Fully typed React components
+Example:
 
-### ESLint Configuration
-
-- **Code Quality**: Consistent code style enforcement
-- **React Rules**: React-specific linting rules
-- **Accessibility**: a11y linting for better accessibility
-
-## 🧪 Testing & Quality
-
-### Development Workflow
-
-```bash
-# Start development server
-npm run dev
-
-# Type checking
-npm run type-check
-
-# Linting
-npm run lint
-
-# Build for production
-npm run build
+```typescript
+export default defineConfig({
+  server: {
+    port: 5173,
+    proxy: {
+      "/api": "http://localhost:8000",
+    },
+  },
+});
 ```
 
-### Browser Compatibility
+## Troubleshooting
 
-- **Modern Browsers**: Chrome 90+, Firefox 88+, Safari 14+
-- **ES2020**: Modern JavaScript features
-- **CSS Grid/Flexbox**: Modern layout systems
+### Backend Connection Issues
 
-## 🚀 Deployment
+**Error**: "Failed to fetch flights"
+
+**Solutions**:
+
+- Verify backend is running on port 8000
+- Check `VITE_API_URL` environment variable
+- Check browser console for CORS errors
+- Ensure backend CORS is configured correctly
+
+### No Flights Displaying
+
+**Solutions**:
+
+- Check backend configuration (address, radius)
+- Verify FlightRadar24 API is working
+- Check Activity Logs for error messages
+- Increase search radius in Settings
+
+### Theme Not Persisting
+
+**Solutions**:
+
+- Check browser localStorage is enabled
+- Clear browser cache
+- Check for JavaScript errors in console
+
+### Display Simulator Not Showing Flights
+
+**Solutions**:
+
+- Ensure flights array is not empty
+- Check that rotation interval is running
+- Verify flight data format matches interface
+- Check browser console for errors
+
+## Performance
+
+### Optimizations
+
+- **Polling Intervals**: Reasonable intervals to avoid excessive API calls
+- **React Memoization**: Key components use proper key props
+- **CSS Animations**: GPU-accelerated transforms
+- **Bundle Size**: Code splitting with React Router
+
+### Recommendations
+
+- Backend caching reduces redundant API calls
+- Adjust polling intervals based on needs
+- Use production build for deployment
+- Enable gzip compression on server
+
+## Technologies
+
+- **React 19**: Latest React version with new features
+- **TypeScript 5.9**: Full type safety
+- **Vite 7**: Fast build tool and dev server
+- **React Router 7**: Client-side routing
+- **CSS Custom Properties**: Theme system
+- **Fetch API**: HTTP requests
+
+## Deployment
 
 ### Production Build
 
 ```bash
 npm run build
-# Outputs to dist/ directory
 ```
 
-### Serving Static Files
+### Serve Static Files
 
-The built application can be served by any static file server:
-
-- **Nginx**: Traditional web server
-- **Netlify/Vercel**: JAMstack platforms
-- **Express**: Node.js static serving
-
-### Environment Configuration
+Use any static file server:
 
 ```bash
-# .env file
-VITE_API_BASE_URL=http://your-backend-url:8000
+# Using serve
+npx serve dist
+
+# Using nginx
+# Copy dist/ contents to nginx html directory
+
+# Using Vercel/Netlify
+# Connect repository and deploy
 ```
+
+### Environment Variables
+
+Set `VITE_API_URL` in your deployment platform to point to your production backend.
+
+## License
+
+See root LICENSE file.
+
+## Support
+
+For issues or questions:
+
+- Check Activity Logs for error messages
+- Verify backend API is accessible
+- Check browser console for JavaScript errors
+- Ensure all dependencies are installed

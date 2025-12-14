@@ -1,34 +1,9 @@
 [main]
-address = "31 Maltings Place, Fulham, London, SW62BU"
+address = "San Francisco, CA"
 search_radius_meters = 3000
-max_flights = 25
+max_flights = 20
 max_elapsed_time = 1800
 
-[ui]
-boot_screen_duration = 10
-scan_update_interval = 2
-flight_display_duration = 5
-
 [logging]
-level = "INFO"
-path = "/tmp/flight_tracker.log"
-max_size = "10MB"
-
-[api]
-user_agent = "Flight Tracker v1.0"
-timeout = 30
-retry_attempts = 3
-backend_url = "http://localhost:8000"
-
-[development]
-enabled = true
-
-[ui.display]
-enabled = true
-type = "web"
-rotation = 0
-color = "black"
-
-[ui.font]
-name = "DejaVuSansMono"
-size_offset = 0
+max_activities = 500
+categories = ["SYSTEM", "RADAR", "FLIGHT", "CONFIG", "ERROR", "INFO"]

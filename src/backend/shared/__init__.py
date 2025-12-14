@@ -1,0 +1,30 @@
+"""Shared package for Flight Tracker API."""
+from .constants import (
+    APP_NAME,
+    APP_VERSION,
+    APP_DESCRIPTION,
+    BASE_DIR,
+    CONFIG_FILE,
+    DEFAULT_HOST,
+    DEFAULT_PORT,
+    CORS_ORIGINS,
+    CORS_ALLOW_CREDENTIALS,
+    CORS_ALLOW_METHODS,
+    CORS_ALLOW_HEADERS,
+    MAX_ACTIVITIES
+)
+
+__all__ = [
+    "APP_NAME",
+    "APP_VERSION",
+    "APP_DESCRIPTION",
+    "BASE_DIR",
+    "CONFIG_FILE",
+    "DEFAULT_HOST",
+    "DEFAULT_PORT",
+    "CORS_ORIGINS",
+    "CORS_ALLOW_CREDENTIALS",
+    "CORS_ALLOW_METHODS",
+    "CORS_ALLOW_HEADERS",
+    "MAX_ACTIVITIES"
+]
