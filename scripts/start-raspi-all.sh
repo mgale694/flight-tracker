@@ -62,7 +62,15 @@ cd "$PROJECT_ROOT/src/backend"
 # Create virtual environment if it doesn't exist
 if [ ! -d "venv" ]; then
     echo "📦 Creating Python virtual environment..."
-    python3 -m venv venv
+    # Use --system-site-packages so GPIO system packages are accessible
+    python3 -m venv --system-site-packages venv
+else
+    # Check if venv has system-site-packages enabled
+    if [ ! -f "venv/pyvenv.cfg" ] || ! grep -q "include-system-site-packages = true" "venv/pyvenv.cfg" 2>/dev/null; then
+        echo "⚠️  Existing venv doesn't include system packages, recreating..."
+        rm -rf venv
+        python3 -m venv --system-site-packages venv
+    fi
 fi
 
 # Activate virtual environment
@@ -152,7 +160,14 @@ pip install -q -r requirements.txt
 # Install Pi hardware packages if on Raspberry Pi
 if [ -f "requirements-pi.txt" ] && command -v raspi-config &> /dev/null; then
     echo "📦 Installing Raspberry Pi hardware packages..."
-    pip install -q -r requirements-pi.txt || echo "⚠️  Some hardware packages may need system install"
+    # Try pip install, but don't fail if lgpio build fails (use system packages instead)
+    pip install -q RPi.GPIO spidev gpiozero 2>/dev/null || true
+    
+    # Check if lgpio is available from system
+    if ! python -c "import lgpio" 2>/dev/null; then
+        echo "⚠️  lgpio not available in venv, will use system packages"
+        echo "   Run: sudo apt-get install python3-lgpio python3-rpi-lgpio"
+    fi
 fi
 
 # Start raspi client in background using the SAME Python from venv

@@ -21,17 +21,24 @@
 ```bash
 cd ~/flight-tracker
 
-# 1. Install ALL required packages (including lgpio)
-./scripts/fix-venv-hardware.sh
+# Pull latest changes
+git pull
+
+# 1. Install GPIO system packages (needs sudo)
+sudo ./scripts/install-gpio-packages.sh
 
 # 2. Test display hardware works
 ./scripts/test-display.sh
 
-# 3. Run full system (now uses venv Python consistently)
+# 3. Run full system (will recreate venv with system packages)
 ./scripts/start-raspi-all.sh
 ```
 
-**Note:** The start script was updated to use `python` (venv) instead of `python3` (system) so packages are found correctly.
+**What changed:**
+
+- Virtual environment now created with `--system-site-packages` flag
+- This gives the venv access to system-installed GPIO packages
+- No need to build `lgpio` from source (uses system package instead)
 
 ## Test Display First!
 
