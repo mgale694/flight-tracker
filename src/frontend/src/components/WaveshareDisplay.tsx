@@ -2,7 +2,9 @@
  * Waveshare 2.13" V4 E-ink Display Simulator (250x122 pixels)
  */
 
-import type { Flight } from '../types';
+import { useEffect, useState } from 'react';
+import type { Flight, Config } from '../types';
+import { api } from '../api';
 import './WaveshareDisplay.css';
 
 interface WaveshareDisplayProps {
@@ -22,6 +24,54 @@ export default function WaveshareDisplay({
   showBootScreen = false,
   showScanScreen = false
 }: WaveshareDisplayProps) {
+  const [displayFields, setDisplayFields] = useState<string[]>(['FROM', 'AIRLINE', 'MODEL', 'REG', 'ROUTE']);
+
+  useEffect(() => {
+    // Load display fields from config
+    api.getConfig().then(config => {
+      if (config.main.display_fields) {
+        setDisplayFields(config.main.display_fields);
+      }
+    }).catch(err => {
+      console.error('Failed to load config:', err);
+    });
+  }, []);
+
+  const getFieldValue = (fieldId: string): string => {
+    if (!flight) return 'N/A';
+
+    const origin_name = flight.origin_name;
+    const origin_code = flight.origin || 'N/A';
+    const dest_name = flight.destination_name;
+    const dest_code = flight.destination || 'N/A';
+
+    // Display full name with code, or just code if name not available
+    const origin_display = origin_name && origin_name !== origin_code 
+      ? `${origin_name} (${origin_code})` 
+      : origin_code;
+    
+    const dest_display = dest_name && dest_name !== dest_code 
+      ? `${dest_name} (${dest_code})` 
+      : dest_code;
+
+    const fieldMap: Record<string, string> = {
+      'FROM': `FROM: ${origin_display}`,
+      'TO': `TO: ${dest_display}`,
+      'AIRLINE': `AIRLINE: ${flight.airline || 'N/A'}`,
+      'MODEL': `MODEL: ${flight.aircraft || 'Unknown'}`,
+      'REG': `REG: ${flight.registration || 'N/A'}`,
+      'ROUTE': `${origin_code} → ${dest_code}`,
+      'callsign': `CALLSIGN: ${flight.callsign || 'N/A'}`,
+      'registration': `REG: ${flight.registration || 'N/A'}`,
+      'altitude': `ALT: ${flight.altitude} ft`,
+      'speed': `SPD: ${flight.speed} kts`,
+      'heading': `HDG: ${flight.heading}°`,
+      'distance': `DIST: ${Math.round(flight.distance)} m`,
+    };
+
+    return fieldMap[fieldId] || fieldId;
+  };
+
   return (
     <div className="waveshare-display">
       <div className="display-screen">
@@ -53,22 +103,12 @@ export default function WaveshareDisplay({
             
             <div className="divider"></div>
             
-            {/* Flight details - matching view.py */}
-            <div className="screen-row detail-line">
-              <span className="label">FROM: {flight.origin}</span>
-            </div>
-            <div className="screen-row detail-line">
-              <span className="label">AIRLINE: {flight.airline}</span>
-            </div>
-            <div className="screen-row detail-line">
-              <span className="label">MODEL: {flight.aircraft}</span>
-            </div>
-            <div className="screen-row detail-line">
-              <span className="label">REG: {flight.registration}</span>
-            </div>
-            <div className="screen-row detail-line route">
-              <span className="label">{flight.origin} → {flight.destination}</span>
-            </div>
+            {/* Dynamic fields based on configuration */}
+            {displayFields.slice(0, 5).map((fieldId, index) => (
+              <div key={index} className="screen-row detail-line">
+                <span className="label">{getFieldValue(fieldId)}</span>
+              </div>
+            ))}
             
             <div className="divider"></div>
             
