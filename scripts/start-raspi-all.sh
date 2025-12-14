@@ -149,6 +149,12 @@ fi
 echo "📥 Installing raspi dependencies..."
 pip install -q -r requirements.txt
 
+# Install Pi hardware packages if on Raspberry Pi
+if [ -f "requirements-pi.txt" ] && command -v raspi-config &> /dev/null; then
+    echo "📦 Installing Raspberry Pi hardware packages..."
+    pip install -q -r requirements-pi.txt || echo "⚠️  Some hardware packages may need system install"
+fi
+
 # Start raspi client in background
 echo "🖥️  Starting E-ink Display Client..."
 python3 agent.py > /tmp/flight-tracker-raspi.log 2>&1 &

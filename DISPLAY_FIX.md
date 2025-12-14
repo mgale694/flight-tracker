@@ -9,7 +9,7 @@ ERROR - Cannot import Waveshare EPD module (missing Pi libraries): No module nam
 WARNING - Display not initialized, skipping render
 ```
 
-This means the Python packages for hardware communication aren't installed yet.
+**Key insight:** The diagnostic script (`diagnose-display.sh`) may pass ✅ because it runs with system Python, but the flight tracker runs in a **virtual environment** that doesn't have the hardware packages installed yet!
 
 ## The Solution
 
@@ -47,20 +47,38 @@ sudo raspi-config
 - Navigate to: **Interface Options** → **SPI** → **Enable**
 - Exit and save
 
-### Step 4: Reboot
+### Step 4: Test Display Hardware
+
+**Before rebooting, test the display with a simple script:**
+
+```bash
+cd ~/flight-tracker
+./scripts/test-display.sh
+```
+
+This will:
+
+- Check all Python modules are available
+- Test display initialization
+- Render a test pattern to your e-ink display
+- Verify everything works
+
+If this test passes, your display is working! 🎉
+
+### Step 5: Reboot (if test passed)
 
 ```bash
 sudo reboot
 ```
 
-### Step 5: Run Flight Tracker Again
+### Step 6: Run Flight Tracker
 
 ```bash
 cd ~/flight-tracker
 ./scripts/start-raspi-all.sh
 ```
 
-The display warnings should be gone! 🎉
+The display warnings should be gone! ✅
 
 ## Manual Installation (If Script Fails)
 
