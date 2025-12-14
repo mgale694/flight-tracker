@@ -1,0 +1,28 @@
+[main]
+# API Mode: connect to backend API server
+api_url = "http://localhost:8000"
+use_backend_api = true
+
+# Standalone Mode: use FlightRadar24 API directly
+address = "Your Location"
+search_radius_meters = 3000
+max_flights = 20
+
+[ui]
+boot_screen_duration = 10
+flight_rotation_interval = 5
+display_enabled = true
+
+[ui.display]
+enabled = true
+type = "waveshare213in_v4"
+color = "black"
+rotation = 180
+
+[ui.font]
+name = "Font.ttc"
+size_offset = 0
+
+[logging]
+level = "INFO"
+log_file = "flight_tracker.log"
