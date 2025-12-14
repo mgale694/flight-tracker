@@ -123,9 +123,13 @@ fi
 
 echo "✅ Frontend setup complete"
 
-# Build frontend for production
+# Get local IP for API URL
+LOCAL_IP=$(get_local_ip)
+
+# Build frontend for production with API URL pointing to Pi's IP
 echo "🏗️  Building frontend..."
-npm run build
+echo "📡 API URL: http://$LOCAL_IP:8000"
+VITE_API_URL="http://$LOCAL_IP:8000" npm run build
 
 # Serve frontend with a simple HTTP server
 echo "🌐 Starting Frontend Web Server..."
@@ -185,6 +189,7 @@ echo -e "${BLUE}🔹 Access from your laptop/phone:${NC}"
 echo ""
 echo -e "${YELLOW}   Frontend Dashboard:${NC}"
 echo "   http://$LOCAL_IP:5173"
+echo "   (Frontend is configured to use backend at http://$LOCAL_IP:8000)"
 echo ""
 echo -e "${YELLOW}   Backend API:${NC}"
 echo "   http://$LOCAL_IP:8000"
