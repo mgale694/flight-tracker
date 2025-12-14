@@ -262,13 +262,49 @@ This is **normal** before installing the Waveshare libraries! The backend and fr
    ./scripts/start-raspi-all.sh
    ```
 
-**Still not working? Check:**
+**Still not working? Diagnostic checklist:**
 
-- [ ] SPI is enabled: `lsmod | grep spi`
-- [ ] Waveshare files exist: `ls src/raspi/ui/hw/libs/waveshare/epd2in13_V4.py`
-- [ ] GPIO permissions: `sudo usermod -a -G spi,gpio pi` (then logout/login)
-- [ ] Display is connected correctly (check wiring table above)
-- [ ] Try with sudo: `sudo ./scripts/start-raspi-all.sh`
+1. **Check Python modules are installed:**
+
+   ```bash
+   python3 -c "import spidev; print('OK')"     # Should print "OK"
+   python3 -c "import gpiozero; print('OK')"   # Should print "OK"
+   python3 -c "import RPi.GPIO; print('OK')"   # Should print "OK"
+   ```
+
+   If any fail, install with: `pip3 install spidev gpiozero RPi.GPIO --break-system-packages`
+
+2. **Check SPI is enabled:**
+
+   ```bash
+   lsmod | grep spi        # Should show spi_bcm2835 or similar
+   ls -l /dev/spidev*      # Should list /dev/spidev0.0 and /dev/spidev0.1
+   ```
+
+3. **Check Waveshare library files:**
+
+   ```bash
+   ls src/raspi/ui/hw/libs/waveshare/epd2in13_V4.py
+   ls src/raspi/ui/hw/libs/waveshare/epdconfig.py
+   ```
+
+   Both files must exist!
+
+4. **Check GPIO permissions:**
+
+   ```bash
+   groups                  # Should include 'spi' and 'gpio'
+   # If not:
+   sudo usermod -a -G spi,gpio $USER
+   # Then logout and login again
+   ```
+
+5. **Check display wiring** (see wiring table above)
+
+6. **Try with sudo:**
+   ```bash
+   sudo ./scripts/start-raspi-all.sh
+   ```
 
 ### Backend/Frontend Issues
 

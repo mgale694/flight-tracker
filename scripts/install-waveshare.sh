@@ -26,7 +26,17 @@ fi
 echo ""
 echo "📥 Installing system dependencies..."
 sudo apt-get update
-sudo apt-get install -y python3-rpi.gpio python3-spidev python3-pil git
+sudo apt-get install -y python3-rpi.gpio python3-spidev python3-gpiozero python3-dev python3-pil git
+
+# Install Python packages for hardware
+echo ""
+echo "📦 Installing Python hardware packages..."
+if command -v pip3 &> /dev/null; then
+    echo "Installing: RPi.GPIO, spidev, gpiozero..."
+    pip3 install RPi.GPIO spidev gpiozero --break-system-packages 2>/dev/null || pip3 install RPi.GPIO spidev gpiozero || true
+else
+    echo "⚠️  pip3 not found, using system packages only"
+fi
 
 # Create libs directory
 mkdir -p "$LIBS_DIR"
@@ -65,6 +75,28 @@ rm -rf waveshare-examples
 echo ""
 echo "✅ Waveshare libraries installed!"
 echo ""
+echo "📋 Verifying installation..."
+echo ""
+
+# Check Python modules
+python3 -c "import spidev; print('✅ spidev module available')" 2>/dev/null || echo "❌ spidev module not found"
+python3 -c "import gpiozero; print('✅ gpiozero module available')" 2>/dev/null || echo "❌ gpiozero module not found"
+python3 -c "import RPi.GPIO; print('✅ RPi.GPIO module available')" 2>/dev/null || echo "❌ RPi.GPIO module not found"
+
+echo ""
+
+# Check Waveshare files
+if [ -f "$LIBS_DIR/waveshare/epd2in13_V4.py" ] && [ -f "$LIBS_DIR/waveshare/epdconfig.py" ]; then
+    echo "✅ Waveshare EPD library files present"
+    ls -lh "$LIBS_DIR/waveshare/"*.py
+else
+    echo "❌ Waveshare EPD library files missing!"
+    echo "   Expected files:"
+    echo "   - $LIBS_DIR/waveshare/epd2in13_V4.py"
+    echo "   - $LIBS_DIR/waveshare/epdconfig.py"
+fi
+
+echo ""
 echo "📋 Next steps:"
 echo "   1. Enable SPI interface:"
 echo "      sudo raspi-config"
@@ -73,7 +105,10 @@ echo ""
 echo "   2. Reboot your Pi:"
 echo "      sudo reboot"
 echo ""
-echo "   3. Run the flight tracker again:"
+echo "   3. Verify SPI is enabled after reboot:"
+echo "      lsmod | grep spi"
+echo ""
+echo "   4. Run the flight tracker again:"
 echo "      ./scripts/start-raspi-all.sh"
 echo ""
 echo "   The display should now work without warnings!"
