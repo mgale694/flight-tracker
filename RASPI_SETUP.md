@@ -1,42 +1,41 @@
-# Flight Tracker - Raspberry Pi Complete Setup
+# Flight Tracker - Raspberry Pi Setup
 
 Run the complete Flight Tracker system on your Raspberry Pi with backend API, web frontend, and e-ink display!
 
+## Prerequisites
+
+- Raspberry Pi (any model with GPIO)
+- Waveshare 2.13" V4 e-ink display (optional)
+- Internet connection
+- MicroSD card with Raspberry Pi OS
+
 ## Quick Start
 
-### On Your Raspberry Pi
+```bash
+# 1. Clone the repository
+cd ~
+git clone https://github.com/mgale694/flight-tracker.git
+cd flight-tracker
 
-1. **Clone the repository:**
+# 2. Install GPIO system packages (for e-ink display)
+sudo ./scripts/install-gpio-packages.sh
 
-   ```bash
-   cd ~
-   git clone https://github.com/mgale694/flight-tracker.git
-   cd flight-tracker
-   ```
+# 3. Enable SPI interface
+sudo raspi-config
+# Navigate: Interface Options → SPI → Enable → Reboot
 
-2. **Install Waveshare display libraries (first time only):**
+# 4. Run everything!
+./scripts/start-raspi-all.sh
+```
 
-   ```bash
-   ./scripts/install-waveshare.sh
-   sudo raspi-config  # Enable SPI: Interface Options → SPI → Enable
-   sudo reboot
-   ```
+Access from your laptop: The script will show you the URLs (e.g., `http://192.168.0.220:5173`)
 
-3. **Run the all-in-one startup script:**
+## First Time Configuration
 
-   ```bash
-   cd ~/flight-tracker
-   ./scripts/start-raspi-all.sh
-   ```
-
-4. **Access from your laptop:**
-   - Frontend: `http://<raspberry-pi-ip>:5173`
-   - Backend API: `http://<raspberry-pi-ip>:8000`
-   - Settings: `http://<raspberry-pi-ip>:5173/settings`
-
-The script will show you the exact URL when it starts!
-
-> **Note:** If you see "Display not initialized" warnings, that's normal before installing the Waveshare libraries. The backend and frontend will still work perfectly!
+1. Open `http://<pi-ip>:5173/settings` in your browser
+2. Enter your home address or postcode
+3. Set search radius (5000-15000m recommended)
+4. Save - flights will appear within seconds!
 
 ## What Gets Started
 
@@ -48,25 +47,17 @@ The `start-raspi-all.sh` script launches:
 
 All three components run on the Raspberry Pi and are accessible from any device on your network!
 
-## Configuration
+## What Gets Started
 
-### First Time Setup
+The `start-raspi-all.sh` script launches:
 
-When you first run the system:
+1. **Backend API** (port 8000) - Flight tracking and configuration
+2. **Frontend Web Server** (port 5173) - Dashboard and settings interface
+3. **E-ink Display Client** - Shows flights on the hardware display
 
-1. Open `http://<raspberry-pi-ip>:5173/settings` in your browser
-2. Enter your location (address, postcode, etc.)
-3. Adjust search radius and other settings
-4. Click "Save Configuration"
-5. Flights will appear on both the web dashboard and e-ink display!
+All three components run on the Raspberry Pi and are accessible from any device on your network!
 
-### Files to Configure
-
-- **Backend**: `src/backend/config.toml` - Main configuration
-- **Raspi Client**: `src/raspi/config.toml` - Display settings (auto-configured by script)
-- **Frontend**: Uses backend config via API
-
-## Auto-Start on Boot (Optional)
+## Auto-Start on Boot
 
 To make the Flight Tracker start automatically when your Pi boots:
 
@@ -206,201 +197,44 @@ To access from outside your home network, set up port forwarding on your router:
 
 ## Troubleshooting
 
-### Can't Access from Laptop
+See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for complete diagnostic guides.
 
-1. **Check Pi is on the same network:**
+### Quick Checks
 
-   ```bash
-   # On Pi
-   hostname -I
-   # On laptop, try to ping it
-   ping <pi-ip-address>
-   ```
+**Can't access from laptop?**
 
-2. **Check firewall:**
+- Check Pi's IP: `hostname -I`
+- Ping from laptop: `ping <pi-ip>`
+- Check services: `curl http://localhost:8000/api/health`
 
-   ```bash
-   # On Pi, allow ports
-   sudo ufw allow 8000
-   sudo ufw allow 5173
-   ```
-
-3. **Check services are running:**
-   ```bash
-   # On Pi
-   curl http://localhost:8000/api/health
-   curl http://localhost:5173
-   ```
-
-### Display Shows "Display not initialized" Warning
-
-This is **normal** before installing the Waveshare libraries! The backend and frontend will still work perfectly.
-
-**To fix:**
-
-1. **Install the libraries:**
-
-   ```bash
-   ./scripts/install-waveshare.sh
-   ```
-
-2. **Enable SPI:**
-
-   ```bash
-   sudo raspi-config
-   # Navigate: Interface Options → SPI → Enable
-   ```
-
-3. **Reboot:**
-
-   ```bash
-   sudo reboot
-   ```
-
-4. **Run again:**
-   ```bash
-   ./scripts/start-raspi-all.sh
-   ```
-
-**Still not working? Diagnostic checklist:**
-
-1. **Check Python modules are installed:**
-
-   ```bash
-   python3 -c "import spidev; print('OK')"     # Should print "OK"
-   python3 -c "import gpiozero; print('OK')"   # Should print "OK"
-   python3 -c "import RPi.GPIO; print('OK')"   # Should print "OK"
-   ```
-
-   If any fail, install with: `pip3 install spidev gpiozero RPi.GPIO --break-system-packages`
-
-2. **Check SPI is enabled:**
-
-   ```bash
-   lsmod | grep spi        # Should show spi_bcm2835 or similar
-   ls -l /dev/spidev*      # Should list /dev/spidev0.0 and /dev/spidev0.1
-   ```
-
-3. **Check Waveshare library files:**
-
-   ```bash
-   ls src/raspi/ui/hw/libs/waveshare/epd2in13_V4.py
-   ls src/raspi/ui/hw/libs/waveshare/epdconfig.py
-   ```
-
-   Both files must exist!
-
-4. **Check GPIO permissions:**
-
-   ```bash
-   groups                  # Should include 'spi' and 'gpio'
-   # If not:
-   sudo usermod -a -G spi,gpio $USER
-   # Then logout and login again
-   ```
-
-5. **Check display wiring** (see wiring table above)
-
-6. **Try with sudo:**
-   ```bash
-   sudo ./scripts/start-raspi-all.sh
-   ```
-
-### Backend/Frontend Issues
-
-Check logs:
+**Display not working?**
 
 ```bash
-tail -f /tmp/flight-tracker-backend.log
-tail -f /tmp/flight-tracker-frontend.log
-tail -f /tmp/flight-tracker-raspi.log
+# Run diagnostic
+./scripts/diagnose-display.sh
+
+# If it shows missing packages:
+sudo ./scripts/install-gpio-packages.sh
 ```
 
-### Stopping the Services
-
-Press `Ctrl+C` in the terminal where you ran the script, or:
+**View logs:**
 
 ```bash
-# Find and kill processes
+tail -f /tmp/flight-tracker-raspi.log
+tail -f /tmp/flight-tracker-backend.log
+```
+
+**Stop services:**
+
+```bash
+# Press Ctrl+C in terminal, or:
 pkill -f "python.*main.py"
-pkill -f "python3.*agent.py"
 pkill -f "npx serve"
 ```
 
-## Architecture
+## What's Next?
 
-```
-Raspberry Pi
-├── Backend API (port 8000)
-│   ├── Fetches flights from FlightRadar24
-│   ├── Manages configuration
-│   └── Serves API endpoints
-├── Frontend Web Server (port 5173)
-│   ├── Dashboard view
-│   ├── Settings interface
-│   └── Activities log
-└── E-ink Display Client
-    ├── Connects to Backend API
-    ├── Renders to e-ink display
-    └── Shows boot screen & flights
-```
-
-All components communicate via the Backend API running on localhost.
-
-## Advanced Configuration
-
-### Change Ports
-
-Edit `scripts/start-raspi-all.sh` to use different ports:
-
-```bash
-# Frontend port (default 5173)
-npx serve -s dist -l 3000  # Change to port 3000
-
-# Backend port (default 8000)
-# Edit src/backend/main.py: uvicorn.run(app, host="0.0.0.0", port=9000)
-```
-
-### Use External Backend
-
-If you want to run the backend elsewhere:
-
-1. Edit `src/raspi/config.toml`:
-
-   ```toml
-   [main]
-   api_url = "http://your-server:8000"
-   ```
-
-2. Skip backend startup in the script
-
-### Development Mode
-
-For development with hot-reload:
-
-```bash
-# Terminal 1 - Backend
-cd src/backend
-source venv/bin/activate
-python main.py
-
-# Terminal 2 - Frontend (dev mode)
-cd src/frontend
-npm run dev
-
-# Terminal 3 - Display
-cd src/raspi
-python3 agent.py
-```
-
-## Requirements
-
-- Raspberry Pi (any model with GPIO)
-- Python 3.8+
-- Node.js 18+
-- Internet connection
-- Waveshare 2.13" V4 e-ink display (optional)
-
-## License
-
-MIT License - See LICENSE file
+- Configure your location in Settings
+- Set up auto-start on boot (see Auto-Start section above)
+- Check [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) if you have issues
+- See main [README.md](README.md) for architecture details
