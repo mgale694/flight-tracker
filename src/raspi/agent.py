@@ -124,9 +124,10 @@ class FlightTrackerAgent:
         self.running = False
         
         if self.display.is_enabled():
-            # Clear the display before sleeping
+            # Clear the display by rendering a blank screen
             logging.info("Clearing display...")
-            self.display.clear()
+            self.display.render_blank()
+            time.sleep(2)  # Give time for the display to update
             self.display.sleep()
         
         logging.info("Agent shutdown complete")

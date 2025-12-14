@@ -81,6 +81,11 @@ class Display:
         if self._enabled:
             self._implementation.clear()
 
+    def render_blank(self):
+        """Render a blank white screen"""
+        if self._enabled:
+            self.view.render_blank_screen()
+
     def sleep(self):
         """Put display to sleep"""
         if self._enabled:
