@@ -14,14 +14,56 @@
   color: var(--color-text-secondary);
 }
 
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.5;
+}
+
+.empty-hint {
+  font-size: 0.875rem;
+  margin-top: var(--spacing-xs);
+}
+
 .board-header {
   padding: var(--spacing-md) var(--spacing-lg);
   border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .board-header h3 {
   margin: 0;
   font-size: 1.125rem;
+}
+
+.board-legend {
+  display: flex;
+  gap: var(--spacing-md);
+  font-size: 0.875rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.active {
+  background-color: #4caf50;
+  box-shadow: 0 0 4px #4caf50;
+}
+
+.status-dot.departed {
+  background-color: #666;
 }
 
 .board-table-container {
@@ -60,14 +102,46 @@
   border-bottom: none;
 }
 
+.flight-row.active {
+  background-color: rgba(76, 175, 80, 0.05);
+}
+
+.flight-row.departed {
+  opacity: 0.6;
+}
+
+.status-col {
+  width: 60px;
+  text-align: center;
+}
+
+.status-indicator {
+  font-size: 0.75rem;
+}
+
+.time-col {
+  font-family: "Courier New", monospace;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
 .callsign {
   font-weight: 600;
   color: var(--color-primary);
+  font-family: "Courier New", monospace;
+}
+
+.registration {
+  font-family: "Courier New", monospace;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
 }
 
 .route {
-  font-family: "Courier New", monospace;
   white-space: nowrap;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Responsive */

@@ -11,6 +11,7 @@ import './Tracker.css';
 
 export default function Tracker() {
   const [flights, setFlights] = useState<Flight[]>([]);
+  const [allTrackedFlights, setAllTrackedFlights] = useState<Flight[]>([]);
   const [currentFlightIndex, setCurrentFlightIndex] = useState(0);
   const [lastFlight, setLastFlight] = useState<Flight | null>(null);
   const [lastFlightTime, setLastFlightTime] = useState<number>(0);
@@ -49,6 +50,14 @@ export default function Tracker() {
           setLastFlight(data[0]);
           setLastFlightTime(Date.now());
         }
+        
+        // Add new flights to the tracked history (avoid duplicates by registration)
+        setAllTrackedFlights(prev => {
+          const existingIds = new Set(prev.map(f => f.registration));
+          const newFlights = data.filter(f => !existingIds.has(f.registration));
+          // Add new flights to the beginning (newest first)
+          return [...newFlights, ...prev];
+        });
         
         // Update session stats
         setSessionStats(prev => ({
@@ -181,7 +190,7 @@ export default function Tracker() {
           </div>
 
           <div className="board-section">
-            <FlightBoard flights={flights} />
+            <FlightBoard flights={allTrackedFlights} currentFlights={flights} />
           </div>
         </>
       )}
