@@ -63,9 +63,9 @@ class FlightView:
         draw.line((-5, 15, self.width, 15), fill=0, width=1)
 
         # Prepare field data
-        origin_name = safe_getattr(flight, 'origin_name', None)
+        origin_name = safe_getattr(flight, 'origin_airport_name', None)
         origin_code = safe_getattr(flight, 'origin', 'N/A')
-        dest_name = safe_getattr(flight, 'destination_name', None)
+        dest_name = safe_getattr(flight, 'destination_airport_name', None)
         dest_code = safe_getattr(flight, 'destination', 'N/A')
         
         # Display full name with code, or just code if name not available
