@@ -176,3 +176,10 @@ class FlightView:
         # Rotate for hardware displays
         rotated_image = image.rotate(180)
         self.display.render(rotated_image)
+
+    def render_blank_screen(self):
+        """Render a completely blank/white screen"""
+        image = Image.new("1", (self.width, self.height), 255)  # 255 = white
+        # Rotate for hardware displays
+        rotated_image = image.rotate(180)
+        self.display.render(rotated_image)
