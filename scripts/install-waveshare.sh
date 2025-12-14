@@ -26,14 +26,14 @@ fi
 echo ""
 echo "📥 Installing system dependencies..."
 sudo apt-get update
-sudo apt-get install -y python3-rpi.gpio python3-spidev python3-gpiozero python3-dev python3-pil git
+sudo apt-get install -y python3-rpi.gpio python3-spidev python3-gpiozero python3-lgpio python3-rpi-lgpio python3-dev python3-pil git
 
 # Install Python packages for hardware
 echo ""
 echo "📦 Installing Python hardware packages..."
 if command -v pip3 &> /dev/null; then
-    echo "Installing: RPi.GPIO, spidev, gpiozero..."
-    pip3 install RPi.GPIO spidev gpiozero --break-system-packages 2>/dev/null || pip3 install RPi.GPIO spidev gpiozero || true
+    echo "Installing: RPi.GPIO, spidev, gpiozero, lgpio, rpi-lgpio..."
+    pip3 install RPi.GPIO spidev gpiozero lgpio rpi-lgpio --break-system-packages 2>/dev/null || pip3 install RPi.GPIO spidev gpiozero lgpio rpi-lgpio || true
 else
     echo "⚠️  pip3 not found, using system packages only"
 fi
@@ -82,6 +82,8 @@ echo ""
 python3 -c "import spidev; print('✅ spidev module available')" 2>/dev/null || echo "❌ spidev module not found"
 python3 -c "import gpiozero; print('✅ gpiozero module available')" 2>/dev/null || echo "❌ gpiozero module not found"
 python3 -c "import RPi.GPIO; print('✅ RPi.GPIO module available')" 2>/dev/null || echo "❌ RPi.GPIO module not found"
+python3 -c "import lgpio; print('✅ lgpio module available')" 2>/dev/null || echo "❌ lgpio module not found"
+python3 -c "import rpi_lgpio; print('✅ rpi-lgpio module available')" 2>/dev/null || echo "⚠️  rpi-lgpio module not found (may not be needed)"
 
 echo ""
 

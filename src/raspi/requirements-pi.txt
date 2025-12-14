@@ -5,3 +5,7 @@
 RPi.GPIO>=0.7.1
 spidev>=3.6
 gpiozero>=2.0
+
+# GPIO library backend (for gpiozero)
+lgpio>=0.2.0.0
+rpi-lgpio>=0.4

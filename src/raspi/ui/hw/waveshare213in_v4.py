@@ -40,11 +40,20 @@ class Waveshare213V4(DisplayImpl):
             self._display = None
         except Exception as e:
             logging.error(f"Failed to initialize Waveshare hardware: {e}")
-            if "cannot open resource" in str(e):
+            if "cannot open resource" in str(e).lower():
                 logging.warning(
                     "Hardware resources not available (SPI/GPIO not accessible)"
                 )
                 logging.warning("Run with sudo or enable SPI: sudo raspi-config")
+            elif "edge detection" in str(e).lower():
+                logging.warning("GPIO edge detection failed - this may be a permission or library issue")
+                logging.warning("Try: sudo apt-get install python3-lgpio python3-rpi-lgpio")
+                logging.warning("Or run with: sudo python3 agent.py")
+            elif "lgpio" in str(e).lower() or "gpiozero" in str(e).lower():
+                logging.warning("GPIO library issue detected")
+                logging.warning("Install: pip3 install lgpio rpi-lgpio --break-system-packages")
+            import traceback
+            logging.debug(traceback.format_exc())
             self._display = None
 
     def render(self, canvas):

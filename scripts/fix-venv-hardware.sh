@@ -13,9 +13,9 @@ cd "$PROJECT_ROOT/src/backend"
 if [ -d "venv" ]; then
     echo "📦 Found backend venv, installing packages..."
     source venv/bin/activate
-    pip install spidev gpiozero RPi.GPIO || {
+    pip install spidev gpiozero RPi.GPIO lgpio rpi-lgpio || {
         echo "⚠️  pip install failed, packages may need system install"
-        echo "   Run: sudo apt-get install python3-spidev python3-gpiozero python3-rpi.gpio"
+        echo "   Run: sudo apt-get install python3-spidev python3-gpiozero python3-rpi.gpio python3-lgpio python3-rpi-lgpio"
     }
     deactivate
     echo "✅ Backend venv updated"

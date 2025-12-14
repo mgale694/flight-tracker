@@ -145,7 +145,7 @@ else
     exit 1
 fi
 
-# Install raspi dependencies
+# Install raspi dependencies using the venv pip (we're still in backend venv)
 echo "📥 Installing raspi dependencies..."
 pip install -q -r requirements.txt
 
@@ -155,9 +155,9 @@ if [ -f "requirements-pi.txt" ] && command -v raspi-config &> /dev/null; then
     pip install -q -r requirements-pi.txt || echo "⚠️  Some hardware packages may need system install"
 fi
 
-# Start raspi client in background
+# Start raspi client in background using the SAME Python from venv
 echo "🖥️  Starting E-ink Display Client..."
-python3 agent.py > /tmp/flight-tracker-raspi.log 2>&1 &
+python agent.py > /tmp/flight-tracker-raspi.log 2>&1 &
 RASPI_PID=$!
 echo -e "${GREEN}✅ E-ink Display Client started (PID: $RASPI_PID)${NC}"
 
