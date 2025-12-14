@@ -84,9 +84,9 @@ class FlightView:
         else:
             dest_display = dest_code
         
-        # For route, just show names without codes to save space
-        origin_route = origin_name if origin_name and origin_name != origin_code else origin_code
-        dest_route = dest_name if dest_name and dest_name != dest_code else dest_code
+        # For route, always use airport codes
+        origin_route = origin_code
+        dest_route = dest_code
         
         # Map all available field IDs to their display strings
         field_data = {
@@ -96,7 +96,7 @@ class FlightView:
             "AIRLINE": f"AIRLINE: {safe_getattr(flight, 'airline_name', None) or safe_getattr(flight, 'airline', 'N/A')}",
             "MODEL": f"MODEL: {safe_getattr(flight, 'aircraft_model', None) or safe_getattr(flight, 'aircraft', 'Unknown')}",
             "REG": f"REG: {safe_getattr(flight, 'registration', 'N/A')}",
-            "ROUTE": f"{origin_route} -> {dest_route}",
+            "ROUTE": f"{origin_route} → {dest_route}",
             
             # API field mappings (snake_case from backend)
             "id": f"ID: {safe_getattr(flight, 'id', 'N/A')}",
