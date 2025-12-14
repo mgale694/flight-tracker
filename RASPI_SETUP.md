@@ -120,6 +120,7 @@ cd ~/flight-tracker
 ```
 
 This script will:
+
 - Install system dependencies (RPi.GPIO, spidev, PIL)
 - Download and install Waveshare EPD library
 - Set up the correct file structure
@@ -162,16 +163,16 @@ sudo reboot
 
 ### Display Wiring (Waveshare 2.13" V4)
 
-| Display Pin | Raspberry Pi Pin | GPIO |
-|-------------|------------------|------|
-| VCC         | Pin 1            | 3.3V |
-| GND         | Pin 6            | GND  |
+| Display Pin | Raspberry Pi Pin | GPIO           |
+| ----------- | ---------------- | -------------- |
+| VCC         | Pin 1            | 3.3V           |
+| GND         | Pin 6            | GND            |
 | DIN         | Pin 19           | GPIO 10 (MOSI) |
 | CLK         | Pin 23           | GPIO 11 (SCLK) |
 | CS          | Pin 24           | GPIO 8 (CE0)   |
-| DC          | Pin 22           | GPIO 25 |
-| RST         | Pin 11           | GPIO 17 |
-| BUSY        | Pin 18           | GPIO 24 |
+| DC          | Pin 22           | GPIO 25        |
+| RST         | Pin 11           | GPIO 17        |
+| BUSY        | Pin 18           | GPIO 24        |
 
 See `src/raspi/README.md` for detailed hardware connection instructions.
 
@@ -238,17 +239,20 @@ This is **normal** before installing the Waveshare libraries! The backend and fr
 **To fix:**
 
 1. **Install the libraries:**
+
    ```bash
    ./scripts/install-waveshare.sh
    ```
 
 2. **Enable SPI:**
+
    ```bash
    sudo raspi-config
    # Navigate: Interface Options → SPI → Enable
    ```
 
 3. **Reboot:**
+
    ```bash
    sudo reboot
    ```
