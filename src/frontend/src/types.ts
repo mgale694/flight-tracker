@@ -10,6 +10,8 @@ export interface Flight {
   airline: string;
   origin: string;
   destination: string;
+  origin_name?: string;
+  destination_name?: string;
   altitude: number;
   speed: number;
   heading: number;
@@ -26,6 +28,7 @@ export interface Config {
     max_flights: number;
     max_elapsed_time: number;
     display_hold_time: number;
+    display_fields?: string[];
   };
   logging?: {
     max_activities: number;
@@ -39,6 +42,7 @@ export interface ConfigUpdate {
   max_flights?: number;
   max_elapsed_time?: number;
   display_hold_time?: number;
+  display_fields?: string[];
 }
 
 export interface Activity {

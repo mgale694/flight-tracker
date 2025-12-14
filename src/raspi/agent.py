@@ -2,6 +2,8 @@
 import time
 import logging
 import toml
+import signal
+import sys
 from pathlib import Path
 
 import faces
@@ -36,6 +38,10 @@ class FlightTrackerAgent:
         
         self.running = False
         self.current_flight_index = 0
+        
+        # Setup signal handlers for graceful shutdown
+        signal.signal(signal.SIGINT, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
     
     def _load_config(self, config_path):
         """Load configuration from TOML file"""
@@ -106,12 +112,21 @@ class FlightTrackerAgent:
         finally:
             self.shutdown()
     
+    def _signal_handler(self, signum, frame):
+        """Handle signals (Ctrl+C, SIGTERM) for graceful shutdown"""
+        logging.info(f"Received signal {signum}, initiating shutdown...")
+        self.shutdown()
+        sys.exit(0)
+    
     def shutdown(self):
         """Graceful shutdown"""
         logging.info("Shutting down agent...")
         self.running = False
         
         if self.display.is_enabled():
+            # Clear the display before sleeping
+            logging.info("Clearing display...")
+            self.display.clear()
             self.display.sleep()
         
         logging.info("Agent shutdown complete")

@@ -47,7 +47,7 @@ export default function WaveshareDisplay({
             {/* Top row - matching view.py layout */}
             <div className="screen-row top-row">
               <span className="label">ATC: {flight.callsign}</span>
-              <span className="label">COUNT: {sessionStats?.flightsDetected || 0}</span>
+              <span className="label">COUNT: {sessionStats?.uniqueAircraft || 0}</span>
               <span className="label">TIMER: {sessionStats?.sessionDuration || '0m'}</span>
             </div>
             

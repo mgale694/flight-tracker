@@ -76,6 +76,10 @@ class ConfigService:
             main_config["max_elapsed_time"] = config_update.max_elapsed_time
             updates["max_elapsed_time"] = config_update.max_elapsed_time
         
+        if config_update.display_fields is not None:
+            main_config["display_fields"] = config_update.display_fields
+            updates["display_fields"] = config_update.display_fields
+        
         config["main"] = main_config
         self.save_config(config)
         
@@ -102,7 +106,8 @@ class ConfigService:
                 "address": "San Francisco, CA",
                 "search_radius_meters": 3000,
                 "max_flights": 20,
-                "max_elapsed_time": 1800
+                "max_elapsed_time": 1800,
+                "display_fields": ["FROM", "AIRLINE", "MODEL", "REG", "ROUTE"]
             },
             "logging": {
                 "max_activities": 500,

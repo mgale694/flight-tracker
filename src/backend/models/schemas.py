@@ -13,6 +13,8 @@ class FlightData(BaseModel):
     airline: str
     origin: str
     destination: str
+    origin_name: Optional[str] = None
+    destination_name: Optional[str] = None
     altitude: int
     speed: int
     heading: int
@@ -29,6 +31,7 @@ class ConfigUpdate(BaseModel):
     max_flights: Optional[int] = Field(None, ge=1, le=100)
     max_elapsed_time: Optional[int] = Field(None, ge=60, le=7200)
     display_hold_time: Optional[int] = Field(None, ge=5, le=300)
+    display_fields: Optional[list[str]] = Field(None, description="List of fields to display on e-ink (FROM, TO, AIRLINE, MODEL, REG, ROUTE)")
 
 
 class ActivityLog(BaseModel):

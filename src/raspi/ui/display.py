@@ -38,7 +38,7 @@ class Display:
         print(f"   - Width: {self._implementation.width}")
         print(f"   - Height: {self._implementation.height}")
 
-        self.view = FlightView(self._implementation)
+        self.view = FlightView(self._implementation, config)
 
         if self._enabled:
             self.init_display()

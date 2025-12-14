@@ -4,6 +4,7 @@ search_radius_meters = 3000
 max_flights = 20
 max_elapsed_time = 1800
 display_hold_time = 30
+display_fields = ["FROM", "AIRLINE", "MODEL", "REG", "ROUTE"]
 
 [logging]
 max_activities = 500

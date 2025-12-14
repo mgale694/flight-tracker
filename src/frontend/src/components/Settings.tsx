@@ -35,6 +35,7 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
         search_radius_meters: data.main.search_radius_meters,
         max_flights: data.main.max_flights,
         max_elapsed_time: data.main.max_elapsed_time,
+        display_fields: data.main.display_fields || ['FROM', 'AIRLINE', 'MODEL', 'REG', 'ROUTE'],
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load configuration');
@@ -67,7 +68,7 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
     }
   };
 
-  const handleInputChange = (field: keyof ConfigUpdate, value: string | number) => {
+  const handleInputChange = (field: keyof ConfigUpdate, value: string | number | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -177,6 +178,34 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
             step="5"
             required
           />
+        </div>
+
+        <div className="form-group">
+          <label>
+            E-ink Display Fields
+            <span className="label-hint">Choose which fields to display on e-ink screen</span>
+          </label>
+          <div className="checkbox-group">
+            {['FROM', 'TO', 'AIRLINE', 'MODEL', 'REG', 'ROUTE'].map(field => (
+              <label key={field} className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={formData.display_fields?.includes(field) || false}
+                  onChange={(e) => {
+                    const currentFields = formData.display_fields || [];
+                    const newFields = e.target.checked
+                      ? [...currentFields, field]
+                      : currentFields.filter(f => f !== field);
+                    handleInputChange('display_fields', newFields);
+                  }}
+                />
+                <span>{field}</span>
+              </label>
+            ))}
+          </div>
+          <div className="field-order">
+            <small>Display order: {formData.display_fields?.join(' → ') || 'None selected'}</small>
+          </div>
         </div>
         
         <div className="form-actions">

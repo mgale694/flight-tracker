@@ -139,14 +139,19 @@ class FlightTrackerService:
         Returns:
             Parsed flight data dictionary
         """
+        origin_code = getattr(flight, 'origin_airport_iata', 'N/A') or 'N/A'
+        dest_code = getattr(flight, 'destination_airport_iata', 'N/A') or 'N/A'
+        
         return {
             "id": getattr(flight, 'id', 'N/A'),
             "callsign": getattr(flight, 'callsign', 'N/A') or getattr(flight, 'number', 'N/A'),
             "registration": getattr(flight, 'registration', 'N/A') or 'N/A',
-            "aircraft": getattr(flight, 'aircraft_code', 'Unknown') or 'Unknown',
-            "airline": self._extract_airline(getattr(flight, 'callsign', '') or ''),
-            "origin": getattr(flight, 'origin_airport_iata', 'N/A') or 'N/A',
-            "destination": getattr(flight, 'destination_airport_iata', 'N/A') or 'N/A',
+            "aircraft": getattr(flight, 'aircraft_model', None) or getattr(flight, 'aircraft_code', 'Unknown') or 'Unknown',
+            "airline": getattr(flight, 'airline_name', None) or self._extract_airline(getattr(flight, 'callsign', '') or ''),
+            "origin": origin_code,
+            "destination": dest_code,
+            "origin_name": getattr(flight, 'origin_airport_name', None) or origin_code,
+            "destination_name": getattr(flight, 'destination_airport_name', None) or dest_code,
             "altitude": int(getattr(flight, 'altitude', 0) or 0),
             "speed": int(getattr(flight, 'ground_speed', 0) or 0),
             "heading": int(getattr(flight, 'heading', 0) or 0),
@@ -178,14 +183,19 @@ class FlightTrackerService:
         # 9: registration, 10: timestamp, 11: origin, 12: destination,
         # 13: flight number, 14: on_ground, 15: vertical_speed, 16: callsign
         
+        origin_code = flight_data[11] if len(flight_data) > 11 and flight_data[11] else "N/A"
+        dest_code = flight_data[12] if len(flight_data) > 12 and flight_data[12] else "N/A"
+        
         return {
             "id": flight_id,
             "callsign": flight_data[16] if len(flight_data) > 16 else flight_data[13] if len(flight_data) > 13 else "N/A",
             "registration": flight_data[9] if len(flight_data) > 9 and flight_data[9] else "N/A",
             "aircraft": flight_data[8] if len(flight_data) > 8 and flight_data[8] else "Unknown",
             "airline": self._extract_airline(flight_data[16] if len(flight_data) > 16 else ""),
-            "origin": flight_data[11] if len(flight_data) > 11 and flight_data[11] else "N/A",
-            "destination": flight_data[12] if len(flight_data) > 12 and flight_data[12] else "N/A",
+            "origin": origin_code,
+            "destination": dest_code,
+            "origin_name": origin_code,
+            "destination_name": dest_code,
             "altitude": int(flight_data[4]) if len(flight_data) > 4 and flight_data[4] else 0,
             "speed": int(flight_data[5]) if len(flight_data) > 5 and flight_data[5] else 0,
             "heading": int(flight_data[3]) if len(flight_data) > 3 and flight_data[3] else 0,
