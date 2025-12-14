@@ -1,0 +1,72 @@
+/* Settings page styles */
+
+.settings-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.settings-header {
+  margin-bottom: 2rem;
+}
+
+.settings-header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+}
+
+.settings-subtitle {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.settings-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.settings-help {
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  position: sticky;
+  top: 2rem;
+}
+
+.settings-help h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.settings-help ul {
+  margin: 0 0 1.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.settings-help li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.settings-help strong {
+  color: var(--text-primary);
+}
+
+.settings-help p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .settings-content {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-help {
+    position: static;
+  }
+}

@@ -5,6 +5,7 @@ import { initializeTheme, useTheme } from './theme';
 import { ThemeSwitch } from './components/ThemeSwitch';
 import Tracker from './pages/Tracker';
 import Activities from './pages/Activities';
+import Settings from './pages/Settings';
 
 function App() {
   const [theme, setTheme] = useTheme();
@@ -32,6 +33,12 @@ function App() {
               >
                 Activities
               </NavLink>
+              <NavLink 
+                to="/settings" 
+                className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+              >
+                Settings
+              </NavLink>
             </nav>
             <ThemeSwitch theme={theme} onThemeChange={setTheme} />
           </div>
@@ -41,6 +48,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Tracker />} />
             <Route path="/activities" element={<Activities />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
 

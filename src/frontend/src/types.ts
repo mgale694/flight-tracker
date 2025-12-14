@@ -25,6 +25,7 @@ export interface Config {
     search_radius_meters: number;
     max_flights: number;
     max_elapsed_time: number;
+    display_hold_time: number;
   };
   logging?: {
     max_activities: number;
@@ -37,6 +38,7 @@ export interface ConfigUpdate {
   search_radius_meters?: number;
   max_flights?: number;
   max_elapsed_time?: number;
+  display_hold_time?: number;
 }
 
 export interface Activity {
@@ -57,7 +59,7 @@ export interface APIResponse {
   status: string;
 }
 
-export type Theme = 'light' | 'dark' | 'auto';
+export type { Theme } from './theme';
 
 export interface SessionStats {
   flightsDetected: number;

@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Flight } from '../types';
+import type { Flight } from '../types';
 import { api } from '../api';
 import WaveshareDisplay from '../components/WaveshareDisplay';
 import FlightBoard from '../components/FlightBoard';
@@ -12,6 +12,9 @@ import './Tracker.css';
 export default function Tracker() {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [currentFlightIndex, setCurrentFlightIndex] = useState(0);
+  const [lastFlight, setLastFlight] = useState<Flight | null>(null);
+  const [lastFlightTime, setLastFlightTime] = useState<number>(0);
+  const [displayHoldTime, setDisplayHoldTime] = useState<number>(30);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sessionStats, setSessionStats] = useState({
@@ -20,6 +23,19 @@ export default function Tracker() {
     sessionStart: new Date().toISOString(),
   });
 
+  // Fetch display hold time from config
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const config = await api.getConfig();
+        setDisplayHoldTime(config.main.display_hold_time || 30);
+      } catch (err) {
+        console.error('Failed to fetch config:', err);
+      }
+    };
+    fetchConfig();
+  }, []);
+
   //  Fetch flights
   useEffect(() => {
     const fetchFlights = async () => {
@@ -27,6 +43,12 @@ export default function Tracker() {
         setError(null);
         const data = await api.getFlights();
         setFlights(data);
+        
+        // If we have flights, update last flight and timestamp
+        if (data.length > 0) {
+          setLastFlight(data[0]);
+          setLastFlightTime(Date.now());
+        }
         
         // Update session stats
         setSessionStats(prev => ({
@@ -76,7 +98,25 @@ export default function Tracker() {
     return `${mins}m`;
   };
 
-  const currentFlight = flights.length > 0 ? flights[currentFlightIndex] : null;
+  // Determine which flight to display
+  // Use current flight if available, otherwise use last flight if within hold time
+  const getDisplayFlight = (): Flight | null => {
+    if (flights.length > 0) {
+      return flights[currentFlightIndex];
+    }
+    
+    // Check if we should still display the last flight
+    if (lastFlight && lastFlightTime) {
+      const secondsSinceLastFlight = (Date.now() - lastFlightTime) / 1000;
+      if (secondsSinceLastFlight < displayHoldTime) {
+        return lastFlight;
+      }
+    }
+    
+    return null;
+  };
+
+  const currentFlight = getDisplayFlight();
 
   return (
     <div className="tracker-page">

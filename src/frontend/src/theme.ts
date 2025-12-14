@@ -2,7 +2,7 @@
  * Theme management system with localStorage persistence
  */
 
-import { Theme } from './types';
+export type Theme = 'light' | 'dark' | 'auto';
 
 const THEME_STORAGE_KEY = 'flight-tracker-theme';
 

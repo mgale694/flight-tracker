@@ -2,7 +2,7 @@
  * Flight Board component - Table view of all flights
  */
 
-import { Flight } from '../types';
+import type { Flight } from '../types';
 import './FlightBoard.css';
 
 interface FlightBoardProps {

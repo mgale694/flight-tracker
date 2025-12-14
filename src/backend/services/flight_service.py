@@ -65,30 +65,40 @@ class FlightTrackerService:
             center_lat, center_lon = self.geocode_address(address)
             center_coords = (center_lat, center_lon)
             
-            # Get flights in the general area (bounding box)
-            # Calculate approximate bounding box
+            # Use get_flights() instead of get_bounds() - more reliable
+            # Calculate bounding box for the area
             # 1 degree latitude ≈ 111 km
             lat_offset = (radius_meters / 111000) * 2
             lon_offset = (radius_meters / (111000 * abs(center_lat / 90))) * 2 if center_lat != 0 else lat_offset
             
-            bounds = self.fr_api.get_bounds({
-                'tl_y': center_lat + lat_offset,
-                'tl_x': center_lon - lon_offset,
-                'br_y': center_lat - lat_offset,
-                'br_x': center_lon + lon_offset
-            })
+            # Define the bounding box
+            bounds_str = f"{center_lat + lat_offset},{center_lat - lat_offset},{center_lon - lon_offset},{center_lon + lon_offset}"
+            
+            # Get flights using get_flights() method with bounds parameter
+            try:
+                flights_data = self.fr_api.get_flights(bounds=bounds_str)
+            except Exception as e:
+                print(f"FlightRadar24 API error: {e}")
+                return []
+            
+            # Check if API returned valid data
+            if not flights_data or not isinstance(flights_data, list):
+                print(f"FlightRadar24 API returned invalid data: {type(flights_data).__name__}")
+                return []
+            
+            if len(flights_data) == 0:
+                print(f"FlightRadar24 API returned no flights for bounds at {center_lat}, {center_lon}")
+                return []
             
             # Filter flights by actual distance
             flights_in_range = []
             
-            for flight_id, flight_data in bounds.items():
-                if not isinstance(flight_data, list) or len(flight_data) < 13:
-                    continue
-                
+            for flight in flights_data:
+                # Flight object from get_flights() has attributes, not array indices
                 try:
-                    # Extract flight position
-                    flight_lat = flight_data[1]
-                    flight_lon = flight_data[2]
+                    # Get latitude and longitude
+                    flight_lat = getattr(flight, 'latitude', None)
+                    flight_lon = getattr(flight, 'longitude', None)
                     
                     if flight_lat is None or flight_lon is None:
                         continue
@@ -99,15 +109,16 @@ class FlightTrackerService:
                     distance = geodesic(center_coords, flight_coords).meters
                     
                     if distance <= radius_meters:
-                        # Parse flight data
-                        flight_info = self._parse_flight_data(flight_id, flight_data, distance)
+                        # Parse flight data from Flight object
+                        flight_info = self._parse_flight_object(flight, distance)
                         flights_in_range.append(flight_info)
                         
                         if len(flights_in_range) >= max_flights:
                             break
                 
-                except Exception:
+                except Exception as e:
                     # Skip flights with parsing errors
+                    print(f"Error parsing flight: {e}")
                     continue
             
             # Sort by distance (closest first)
@@ -118,13 +129,40 @@ class FlightTrackerService:
         except Exception as e:
             raise Exception(f"Error fetching flights: {str(e)}")
     
+    def _parse_flight_object(self, flight, distance: float) -> Dict:
+        """Parse Flight object from FlightRadar24 API into structured format.
+        
+        Args:
+            flight: Flight object from FlightRadar24API.get_flights()
+            distance: Distance from tracking point in meters
+            
+        Returns:
+            Parsed flight data dictionary
+        """
+        return {
+            "id": getattr(flight, 'id', 'N/A'),
+            "callsign": getattr(flight, 'callsign', 'N/A') or getattr(flight, 'number', 'N/A'),
+            "registration": getattr(flight, 'registration', 'N/A') or 'N/A',
+            "aircraft": getattr(flight, 'aircraft_code', 'Unknown') or 'Unknown',
+            "airline": self._extract_airline(getattr(flight, 'callsign', '') or ''),
+            "origin": getattr(flight, 'origin_airport_iata', 'N/A') or 'N/A',
+            "destination": getattr(flight, 'destination_airport_iata', 'N/A') or 'N/A',
+            "altitude": int(getattr(flight, 'altitude', 0) or 0),
+            "speed": int(getattr(flight, 'ground_speed', 0) or 0),
+            "heading": int(getattr(flight, 'heading', 0) or 0),
+            "latitude": float(getattr(flight, 'latitude', 0.0)),
+            "longitude": float(getattr(flight, 'longitude', 0.0)),
+            "distance": round(distance, 2),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+    
     def _parse_flight_data(
         self, 
         flight_id: str, 
         flight_data: List, 
         distance: float
     ) -> Dict:
-        """Parse raw flight data into structured format.
+        """Parse raw flight data into structured format (legacy method).
         
         Args:
             flight_id: Flight identifier

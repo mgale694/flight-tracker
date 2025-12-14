@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Activity } from '../types';
+import type { Activity } from '../types';
 import { api } from '../api';
 import './Activities.css';
 

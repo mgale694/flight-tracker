@@ -2,7 +2,7 @@
  * Waveshare 2.13" V4 E-ink Display Simulator (250x122 pixels)
  */
 
-import { Flight } from '../types';
+import type { Flight } from '../types';
 import './WaveshareDisplay.css';
 
 interface WaveshareDisplayProps {
@@ -44,35 +44,39 @@ export default function WaveshareDisplay({
         
         {!showBootScreen && !showScanScreen && flight && (
           <div className="flight-screen">
-            <div className="flight-header">
-              <span className="callsign">{flight.callsign}</span>
-              <span className="aircraft">{flight.aircraft}</span>
+            {/* Top row - matching view.py layout */}
+            <div className="screen-row top-row">
+              <span className="label">ATC: {flight.callsign}</span>
+              <span className="label">COUNT: {sessionStats?.flightsDetected || 0}</span>
+              <span className="label">TIMER: {sessionStats?.sessionDuration || '0m'}</span>
             </div>
             
-            <div className="flight-route">
-              <span>{flight.origin}</span>
-              <span> → </span>
-              <span>{flight.destination}</span>
+            <div className="divider"></div>
+            
+            {/* Flight details - matching view.py */}
+            <div className="screen-row detail-line">
+              <span className="label">FROM: {flight.origin}</span>
+            </div>
+            <div className="screen-row detail-line">
+              <span className="label">AIRLINE: {flight.airline}</span>
+            </div>
+            <div className="screen-row detail-line">
+              <span className="label">MODEL: {flight.aircraft}</span>
+            </div>
+            <div className="screen-row detail-line">
+              <span className="label">REG: {flight.registration}</span>
+            </div>
+            <div className="screen-row detail-line route">
+              <span className="label">{flight.origin} → {flight.destination}</span>
             </div>
             
-            <div className="flight-details">
-              <div className="detail-row">
-                <span>ALT:</span>
-                <span>{flight.altitude.toLocaleString()} ft</span>
-              </div>
-              <div className="detail-row">
-                <span>SPD:</span>
-                <span>{flight.speed} kts</span>
-              </div>
-              <div className="detail-row">
-                <span>DST:</span>
-                <span>{(flight.distance / 1000).toFixed(1)} km</span>
-              </div>
-            </div>
+            <div className="divider"></div>
             
-            <div className="flight-footer">
-              <span className="registration">{flight.registration}</span>
-              <span className="airline">{flight.airline}</span>
+            {/* Bottom row - matching view.py */}
+            <div className="screen-row bottom-row">
+              <span className="label">ALT: {flight.altitude.toLocaleString()} ft</span>
+              <span className="label">SPD: {flight.speed} kts</span>
+              <span className="label">TIME: {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
             </div>
           </div>
         )}

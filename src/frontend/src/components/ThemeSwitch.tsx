@@ -2,7 +2,7 @@
  * Theme switcher component
  */
 
-import { Theme } from '../types';
+import type { Theme } from '../theme';
 import './ThemeSwitch.css';
 
 interface ThemeSwitchProps {

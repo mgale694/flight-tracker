@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Config, ConfigUpdate } from '../types';
+import type { Config, ConfigUpdate } from '../types';
 import { api } from '../api';
 import './Settings.css';
 
@@ -158,6 +158,23 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
             min="60"
             max="7200"
             step="60"
+            required
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="displayHold">
+            Display Hold Time (seconds)
+            <span className="label-hint">How long to show last flight when none detected (5-300 seconds)</span>
+          </label>
+          <input
+            type="number"
+            id="displayHold"
+            value={formData.display_hold_time || ''}
+            onChange={(e) => handleInputChange('display_hold_time', parseInt(e.target.value))}
+            min="5"
+            max="300"
+            step="5"
             required
           />
         </div>

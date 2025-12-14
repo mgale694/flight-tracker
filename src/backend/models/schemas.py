@@ -28,6 +28,7 @@ class ConfigUpdate(BaseModel):
     search_radius_meters: Optional[int] = Field(None, ge=100, le=50000)
     max_flights: Optional[int] = Field(None, ge=1, le=100)
     max_elapsed_time: Optional[int] = Field(None, ge=60, le=7200)
+    display_hold_time: Optional[int] = Field(None, ge=5, le=300)
 
 
 class ActivityLog(BaseModel):
