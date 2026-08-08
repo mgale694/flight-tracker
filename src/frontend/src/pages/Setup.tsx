@@ -1,37 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../api';
+import ViewingZoneEditor from '../components/ViewingZoneEditor';
+import type { LocationPreview } from '../types';
 import './Setup.css';
 
 type SetupStep = 'account' | 'window' | 'complete';
-
-const CARDINAL_DIRECTIONS = [
-  { label: 'N', bearing: 0 },
-  { label: 'NE', bearing: 45 },
-  { label: 'E', bearing: 90 },
-  { label: 'SE', bearing: 135 },
-  { label: 'S', bearing: 180 },
-  { label: 'SW', bearing: 225 },
-  { label: 'W', bearing: 270 },
-  { label: 'NW', bearing: 315 },
-];
-
-function polarPoint(bearing: number, radius: number): { x: number; y: number } {
-  const radians = (bearing * Math.PI) / 180;
-  return {
-    x: 120 + Math.sin(radians) * radius,
-    y: 132 - Math.cos(radians) * radius,
-  };
-}
-
-function viewingSectorPath(bearing: number, fieldOfView: number): string {
-  const radius = 104;
-  const start = polarPoint(bearing - fieldOfView / 2, radius);
-  const end = polarPoint(bearing + fieldOfView / 2, radius);
-  const largeArc = fieldOfView > 180 ? 1 : 0;
-  return `M 120 132 L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
-}
 
 export default function Setup() {
   const [searchParams] = useSearchParams();
@@ -48,13 +23,9 @@ export default function Setup() {
   const [bearing, setBearing] = useState(0);
   const [fieldOfView, setFieldOfView] = useState(80);
   const [maxDistance, setMaxDistance] = useState(35);
+  const [locationPreview, setLocationPreview] = useState<LocationPreview | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const sectorPath = useMemo(
-    () => viewingSectorPath(bearing, fieldOfView),
-    [bearing, fieldOfView],
-  );
 
   useEffect(() => {
     let active = true;
@@ -81,6 +52,8 @@ export default function Setup() {
     setSaving(true);
     setError(null);
     try {
+      const resolvedLocation = await api.previewLocation(address.trim());
+      setLocationPreview(resolvedLocation);
       await api.updateConfig({
         address: address.trim(),
         search_radius_meters: Math.round(maxDistance * 1000),
@@ -175,78 +148,35 @@ export default function Setup() {
               </div>
             </div>
 
-            <label htmlFor="setup-address">Window location</label>
+            <label htmlFor="setup-address">Full window address</label>
             <input
               id="setup-address"
+              autoComplete="street-address"
               value={address}
-              onChange={(event) => setAddress(event.target.value)}
-              placeholder="Address or postcode"
+              onChange={(event) => {
+                setAddress(event.target.value);
+                setLocationPreview(null);
+              }}
+              onBlur={() => {
+                if (address.trim().length >= 3) {
+                  void api.previewLocation(address.trim())
+                    .then(setLocationPreview)
+                    .catch(() => undefined);
+                }
+              }}
+              placeholder="10 Downing Street, London, SW1A 2AA"
               required
             />
 
-            <div className="viewing-preview-grid">
-              <div className="viewing-controls">
-                <fieldset>
-                  <legend>Which way does the window face?</legend>
-                  <div className="cardinal-grid">
-                    {CARDINAL_DIRECTIONS.map((direction) => (
-                      <button
-                        type="button"
-                        key={direction.label}
-                        className={bearing === direction.bearing ? 'selected' : ''}
-                        onClick={() => setBearing(direction.bearing)}
-                        aria-pressed={bearing === direction.bearing}
-                      >
-                        {direction.label}
-                      </button>
-                    ))}
-                  </div>
-                </fieldset>
-
-                <label htmlFor="bearing">Fine direction: {bearing}°</label>
-                <input
-                  id="bearing"
-                  type="range"
-                  min="0"
-                  max="359"
-                  value={bearing}
-                  onChange={(event) => setBearing(Number(event.target.value))}
-                />
-
-                <label htmlFor="field-of-view">Visible width: {fieldOfView}°</label>
-                <input
-                  id="field-of-view"
-                  type="range"
-                  min="20"
-                  max="180"
-                  step="5"
-                  value={fieldOfView}
-                  onChange={(event) => setFieldOfView(Number(event.target.value))}
-                />
-
-                <label htmlFor="view-distance">Clear viewing distance: {maxDistance} km</label>
-                <input
-                  id="view-distance"
-                  type="range"
-                  min="1"
-                  max="50"
-                  value={maxDistance}
-                  onChange={(event) => setMaxDistance(Number(event.target.value))}
-                />
-              </div>
-
-              <div className="viewing-diagram" aria-label="Top-down preview of the viewing zone">
-                <svg viewBox="0 0 240 160" role="img">
-                  <title>Window viewing direction and field of view</title>
-                  <path d={sectorPath} className="viewing-sector" />
-                  <circle cx="120" cy="132" r="9" className="observer" />
-                  <line x1="120" y1="8" x2="120" y2="20" className="north-marker" />
-                  <text x="120" y="7" textAnchor="middle">N</text>
-                </svg>
-                <strong>{bearing}° · {fieldOfView}° view</strong>
-                <span>Up to {maxDistance} km from this window</span>
-              </div>
-            </div>
+            <ViewingZoneEditor
+              bearing={bearing}
+              fieldOfView={fieldOfView}
+              maxDistance={maxDistance}
+              location={locationPreview}
+              onBearingChange={setBearing}
+              onFieldOfViewChange={setFieldOfView}
+              onMaxDistanceChange={setMaxDistance}
+            />
 
             <button type="submit" className="primary-action" disabled={saving}>
               {saving ? 'Pairing display…' : 'Save view and pair display'}
@@ -256,7 +186,7 @@ export default function Setup() {
 
         {step === 'complete' && (
           <div className="setup-complete">
-            <span className="complete-mark" aria-hidden="true">✓</span>
+            <span className="complete-mark">Complete</span>
             <span className="step-number">03</span>
             <h2>Your display is ready.</h2>
             <p>

@@ -82,11 +82,20 @@ class FlightTrackerAgent:
         flights = []
         last_fetch_time = 0
         last_display_update = 0
+        last_config_fetch_time = 0
         fetch_interval = 10  # Fetch flights every 10 seconds
+        config_fetch_interval = 30
         
         try:
             while self.running:
                 current_time = time.time()
+
+                if current_time - last_config_fetch_time >= config_fetch_interval:
+                    remote_config = self.tracker.get_config()
+                    if remote_config:
+                        fields = remote_config.get("main", {}).get("display_fields")
+                        self.display.update_fields(fields)
+                    last_config_fetch_time = current_time
                 
                 # Fetch flights periodically
                 if current_time - last_fetch_time >= fetch_interval:
@@ -101,15 +110,12 @@ class FlightTrackerAgent:
                 
                 # Update display
                 if flights and (current_time - last_display_update >= self.flight_interval):
-                    # Rotate through flights
-                    flight = flights[self.current_flight_index]
+                    flight = self._next_flight(flights)
                     stats = self.session_log.get_stats()
                     
                     logging.info(f"Displaying flight: {getattr(flight, 'callsign', 'N/A')}")
                     self.display.render_flight(flight, stats)
                     
-                    # Move to next flight
-                    self.current_flight_index = (self.current_flight_index + 1) % len(flights)
                     last_display_update = current_time
                 
                 # Sleep to avoid busy loop
@@ -121,6 +127,18 @@ class FlightTrackerAgent:
             logging.error(f"Error in main loop: {e}", exc_info=True)
         finally:
             self.shutdown()
+
+    def _next_flight(self, flights):
+        """Return the next flight safely when live results grow or shrink."""
+
+        if not flights:
+            self.current_flight_index = 0
+            return None
+
+        self.current_flight_index %= len(flights)
+        flight = flights[self.current_flight_index]
+        self.current_flight_index = (self.current_flight_index + 1) % len(flights)
+        return flight
 
     def _pairing_url(self):
         """Build the phone URL shown by the first-boot QR code."""

@@ -9,7 +9,7 @@ class DisplayImpl(object):
     
     def __init__(self, config, name):
         self.name = name
-        print(f"🔧 DisplayImpl.__init__: name={name}")
+        print(f"DisplayImpl.__init__: name={name}")
 
         # Handle both config structures
         if "ui" in config and "display" in config["ui"]:
@@ -19,7 +19,7 @@ class DisplayImpl(object):
         else:
             raise KeyError("No display configuration found in config")
 
-        print(f"🔧 Display config: {self.config}")
+        print(f"Display config: {self.config}")
 
         self._layout = {
             "width": 250,
@@ -50,6 +50,10 @@ class DisplayImpl(object):
     def render(self, canvas):
         """Render image to display - override in subclass"""
         raise NotImplementedError
+
+    def render_full(self, canvas):
+        """Render a high-contrast full refresh when the hardware supports it."""
+        self.render(canvas)
 
     def clear(self):
         """Clear the display - override in subclass"""

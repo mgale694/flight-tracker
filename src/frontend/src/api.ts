@@ -2,7 +2,14 @@
  * API client for communicating with the Flight Tracker backend
  */
 
-import type { Activity, Config, ConfigUpdate, Flight, PairingStatus } from './types';
+import type {
+  Activity,
+  Config,
+  ConfigUpdate,
+  Flight,
+  LocationPreview,
+  PairingStatus,
+} from './types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -70,6 +77,11 @@ class APIClient {
       method: 'PUT',
       body: JSON.stringify(config),
     });
+  }
+
+  async previewLocation(address: string): Promise<LocationPreview> {
+    const params = new URLSearchParams({ address });
+    return this.fetchJSON<LocationPreview>(`/api/location-preview?${params.toString()}`);
   }
 
   /**

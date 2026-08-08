@@ -14,12 +14,6 @@
   color: var(--color-text-secondary);
 }
 
-.empty-icon {
-  font-size: 3rem;
-  margin-bottom: var(--spacing-md);
-  opacity: 0.5;
-}
-
 .empty-hint {
   font-size: 0.875rem;
   margin-top: var(--spacing-xs);
@@ -111,12 +105,26 @@
 }
 
 .status-col {
-  width: 60px;
+  width: 78px;
   text-align: center;
 }
 
 .status-indicator {
-  font-size: 0.75rem;
+  display: inline-block;
+  padding: 0.2rem 0.45rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.status-indicator.active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.status-indicator.departed {
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
 }
 
 .time-col {

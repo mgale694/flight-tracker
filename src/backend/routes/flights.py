@@ -23,22 +23,44 @@ def setup_flight_routes(
             List of flights
         """
         try:
-            main_config = config_service.get_main_config()
+            config = config_service.load_config()
+            main_config = config.get("main", {})
+            viewing_zone = config.get("viewing_zone", {})
             
             address = main_config.get("address", "San Francisco, CA")
-            radius = main_config.get("search_radius_meters", 3000)
+            radius = round(
+                float(
+                    viewing_zone.get(
+                        "max_distance_km",
+                        main_config.get("search_radius_meters", 3000) / 1000,
+                    )
+                )
+                * 1000
+            )
+            min_distance = float(viewing_zone.get("min_distance_km", 0)) * 1000
+            bearing = float(viewing_zone.get("bearing_degrees", 0))
+            field_of_view = float(viewing_zone.get("field_of_view_degrees", 360))
             max_flights = main_config.get("max_flights", 20)
             
             activity_service.log(
                 ActivityCategory.RADAR, 
-                f"Fetching flights for {address} (radius: {radius}m)",
-                {"address": address, "radius": radius}
+                f"Fetching flights for {address} ({bearing}°, {field_of_view}° view)",
+                {
+                    "address": address,
+                    "bearing_degrees": bearing,
+                    "field_of_view_degrees": field_of_view,
+                    "min_distance_meters": min_distance,
+                    "max_distance_meters": radius,
+                }
             )
             
             flights = flight_service.get_flights_in_area(
                 address=address,
                 radius_meters=radius,
-                max_flights=max_flights
+                max_flights=max_flights,
+                bearing_degrees=bearing,
+                field_of_view_degrees=field_of_view,
+                min_distance_meters=min_distance,
             )
             
             activity_service.log(

@@ -60,13 +60,14 @@ Useful project commands:
 
 | Command | Purpose |
 | --- | --- |
+| `make setup` | Provision Raspberry Pi OS packages, SPI, display, runtimes, and web build |
 | `make dev` | Install missing dependencies and run API + web |
 | `make stop` | Gracefully stop a Makefile-managed stack |
 | `make doctor` | Verify tools, processes, API, web, and web-to-API proxy |
 | `make test` | Run domain, compatibility-backend, Pi simulator, and web build checks |
 | `make lint` | Run Ruff, mypy, ESLint, and strict TypeScript checks |
 | `make format` | Apply Python formatting and safe lint fixes |
-| `make pi` | Build and run API + web + e-paper client on Raspberry Pi |
+| `make pi` | Run API + cached web build + e-paper client on Raspberry Pi |
 
 The former startup shell scripts remain as compatibility shims and delegate to
 these Make targets; they no longer manage environments or processes themselves.

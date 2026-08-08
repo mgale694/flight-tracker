@@ -1,7 +1,11 @@
 """Flight tracking service using FlightRadar24 API."""
-from datetime import datetime
+from datetime import datetime, timezone
+import math
+import os
+import time
 from typing import List, Dict, Optional, Tuple
 from FlightRadar24 import FlightRadar24API
+from geopy.extra.rate_limiter import RateLimiter
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 
@@ -12,9 +16,29 @@ class FlightTrackerService:
     def __init__(self):
         """Initialize the flight tracker service."""
         self.fr_api = FlightRadar24API()
-        self.geocoder = Nominatim(user_agent="flight-tracker")
+        self.geocoder = Nominatim(
+            user_agent=os.getenv(
+                "FLIGHT_TRACKER_GEOCODER_USER_AGENT",
+                "skypane-flight-tracker/1.0",
+            ),
+            domain=os.getenv(
+                "FLIGHT_TRACKER_GEOCODER_DOMAIN",
+                "nominatim.openstreetmap.org",
+            ),
+            scheme="https",
+        )
+        self._geocode = RateLimiter(
+            self.geocoder.geocode,
+            min_delay_seconds=1,
+            max_retries=0,
+            swallow_exceptions=False,
+        )
         self.last_coordinates: Optional[Tuple[float, float]] = None
         self.last_address: Optional[str] = None
+        self.last_formatted_address: Optional[str] = None
+        self._airport_names: Optional[Dict[str, str]] = None
+        self._flight_detail_cache: Dict[str, Tuple[float, Optional[Dict]]] = {}
+        self._detail_backoff_until = 0.0
     
     def geocode_address(self, address: str) -> Tuple[float, float]:
         """Convert an address to coordinates.
@@ -28,27 +52,69 @@ class FlightTrackerService:
         Raises:
             ValueError: If address cannot be geocoded
         """
-        # Cache coordinates for same address
-        if address == self.last_address and self.last_coordinates:
-            return self.last_coordinates
-        
+        location = self.resolve_location(address)
+        return location["latitude"], location["longitude"]
+
+    def resolve_location(self, address: str) -> Dict:
+        """Resolve a postcode or address into a full address and map coordinates."""
+
+        normalized_address = address.strip()
+        if not normalized_address:
+            raise ValueError("Enter a postcode or full address")
+
+        if (
+            normalized_address == self.last_address
+            and self.last_coordinates
+            and self.last_formatted_address
+        ):
+            return {
+                "query": normalized_address,
+                "formatted_address": self.last_formatted_address,
+                "latitude": self.last_coordinates[0],
+                "longitude": self.last_coordinates[1],
+            }
+
         try:
-            location = self.geocoder.geocode(address)
+            geocode = getattr(self, "_geocode", self.geocoder.geocode)
+            location = geocode(normalized_address, exactly_one=True)
             if location is None:
-                raise ValueError(f"Could not geocode address: {address}")
-            
-            coordinates = (location.latitude, location.longitude)
-            self.last_address = address
+                raise ValueError(f"Could not find: {normalized_address}")
+
+            coordinates = (float(location.latitude), float(location.longitude))
+            formatted_address = str(
+                getattr(location, "address", None) or normalized_address
+            )
+            self.last_address = normalized_address
             self.last_coordinates = coordinates
-            return coordinates
+            self.last_formatted_address = formatted_address
+            return {
+                "query": normalized_address,
+                "formatted_address": formatted_address,
+                "latitude": coordinates[0],
+                "longitude": coordinates[1],
+            }
+        except ValueError:
+            raise
         except Exception as e:
             raise ValueError(f"Geocoding error: {str(e)}")
+
+    def has_cached_location(self, address: str) -> bool:
+        """Return whether an address already has a complete cached resolution."""
+
+        return (
+            address.strip() == self.last_address
+            and self.last_coordinates is not None
+            and self.last_formatted_address is not None
+        )
     
     def get_flights_in_area(
         self,
         address: str,
         radius_meters: int = 3000,
-        max_flights: int = 20
+        max_flights: int = 20,
+        bearing_degrees: Optional[float] = None,
+        field_of_view_degrees: Optional[float] = None,
+        min_distance_meters: float = 0,
     ) -> List[Dict]:
         """Get flights within a radius of an address.
         
@@ -56,6 +122,9 @@ class FlightTrackerService:
             address: Center address for search
             radius_meters: Search radius in meters
             max_flights: Maximum number of flights to return
+            bearing_degrees: Centre bearing of the visible sector
+            field_of_view_degrees: Width of the visible sector
+            min_distance_meters: Ignore aircraft closer than this distance
             
         Returns:
             List of flight data dictionaries
@@ -67,9 +136,11 @@ class FlightTrackerService:
             
             # Use get_flights() instead of get_bounds() - more reliable
             # Calculate bounding box for the area
-            # 1 degree latitude ≈ 111 km
-            lat_offset = (radius_meters / 111000) * 2
-            lon_offset = (radius_meters / (111000 * abs(center_lat / 90))) * 2 if center_lat != 0 else lat_offset
+            # One degree latitude is approximately 111 km. Longitude contracts
+            # towards the poles, so account for the configured latitude.
+            lat_offset = radius_meters / 111000
+            longitude_scale = max(abs(math.cos(math.radians(center_lat))), 0.01)
+            lon_offset = radius_meters / (111000 * longitude_scale)
             
             # Define the bounding box
             bounds_str = f"{center_lat + lat_offset},{center_lat - lat_offset},{center_lon - lon_offset},{center_lon + lon_offset}"
@@ -108,18 +179,20 @@ class FlightTrackerService:
                     # Calculate distance
                     distance = geodesic(center_coords, flight_coords).meters
                     
-                    if distance <= radius_meters:
-                        # Fetch detailed flight information to get airport names, airline names, etc.
-                        try:
-                            # get_flight_details expects the Flight object, not just the ID
-                            flight_details = self.fr_api.get_flight_details(flight)
-                            if flight_details:
-                                flight.set_flight_details(flight_details)
-                                print(f"✓ Got details for {getattr(flight, 'callsign', 'unknown')}: {getattr(flight, 'airline_name', 'N/A')}, {getattr(flight, 'origin_airport_name', 'N/A')} → {getattr(flight, 'destination_airport_name', 'N/A')}")
-                            else:
-                                print(f"⚠ No details available for {getattr(flight, 'callsign', 'unknown')}")
-                        except Exception as detail_error:
-                            print(f"⚠ Could not fetch details for {getattr(flight, 'callsign', 'unknown')}: {detail_error}")
+                    aircraft_bearing = self._bearing_between(
+                        center_lat,
+                        center_lon,
+                        float(flight_lat),
+                        float(flight_lon),
+                    )
+                    inside_view = self._bearing_is_visible(
+                        aircraft_bearing,
+                        bearing_degrees,
+                        field_of_view_degrees,
+                    )
+
+                    if min_distance_meters <= distance <= radius_meters and inside_view:
+                        self._enrich_flight(flight)
                         
                         # Parse flight data from Flight object
                         flight_info = self._parse_flight_object(flight, distance)
@@ -140,6 +213,40 @@ class FlightTrackerService:
             
         except Exception as e:
             raise Exception(f"Error fetching flights: {str(e)}")
+
+    @staticmethod
+    def _bearing_between(
+        origin_latitude: float,
+        origin_longitude: float,
+        target_latitude: float,
+        target_longitude: float,
+    ) -> float:
+        """Calculate the initial compass bearing from the observer to an aircraft."""
+
+        origin_latitude_radians = math.radians(origin_latitude)
+        target_latitude_radians = math.radians(target_latitude)
+        longitude_delta = math.radians(target_longitude - origin_longitude)
+        x = math.sin(longitude_delta) * math.cos(target_latitude_radians)
+        y = (
+            math.cos(origin_latitude_radians) * math.sin(target_latitude_radians)
+            - math.sin(origin_latitude_radians)
+            * math.cos(target_latitude_radians)
+            * math.cos(longitude_delta)
+        )
+        return (math.degrees(math.atan2(x, y)) + 360) % 360
+
+    @staticmethod
+    def _bearing_is_visible(
+        aircraft_bearing: float,
+        centre_bearing: Optional[float],
+        field_of_view: Optional[float],
+    ) -> bool:
+        """Return whether a bearing falls inside the configured viewing sector."""
+
+        if centre_bearing is None or field_of_view is None or field_of_view >= 360:
+            return True
+        angular_difference = abs((aircraft_bearing - centre_bearing + 180) % 360 - 180)
+        return angular_difference <= field_of_view / 2
     
     def _parse_flight_object(self, flight, distance: float) -> Dict:
         """Parse Flight object from FlightRadar24 API into structured format.
@@ -153,6 +260,12 @@ class FlightTrackerService:
         """
         origin_code = getattr(flight, 'origin_airport_iata', 'N/A') or 'N/A'
         dest_code = getattr(flight, 'destination_airport_iata', 'N/A') or 'N/A'
+        origin_name = self._resolve_airport_name(
+            origin_code, getattr(flight, 'origin_airport_name', None)
+        )
+        destination_name = self._resolve_airport_name(
+            dest_code, getattr(flight, 'destination_airport_name', None)
+        )
         
         return {
             # Basic identification
@@ -178,7 +291,7 @@ class FlightTrackerService:
             
             # Origin airport
             "origin": origin_code,
-            "origin_name": getattr(flight, 'origin_airport_name', None) or origin_code,
+            "origin_name": origin_name,
             "origin_airport_iata": origin_code,
             "origin_airport_icao": getattr(flight, 'origin_airport_icao', None),
             "origin_airport_country_code": getattr(flight, 'origin_airport_country_code', None),
@@ -191,7 +304,7 @@ class FlightTrackerService:
             
             # Destination airport
             "destination": dest_code,
-            "destination_name": getattr(flight, 'destination_airport_name', None) or dest_code,
+            "destination_name": destination_name,
             "destination_airport_iata": dest_code,
             "destination_airport_icao": getattr(flight, 'destination_airport_icao', None),
             "destination_airport_country_code": getattr(flight, 'destination_airport_country_code', None),
@@ -221,8 +334,69 @@ class FlightTrackerService:
             # Time and tracking
             "time": getattr(flight, 'time', None),
             "distance": round(distance, 2),
-            "timestamp": datetime.utcnow().isoformat() + "Z"
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         }
+
+    def _enrich_flight(self, flight) -> None:
+        """Apply cached details and avoid repeatedly hitting a blocked endpoint."""
+
+        flight_id = str(getattr(flight, "id", "") or "")
+        if not flight_id:
+            return
+
+        now = time.monotonic()
+        if now < getattr(self, "_detail_backoff_until", 0.0):
+            return
+
+        cached = self._flight_detail_cache.get(flight_id)
+        if cached and now - cached[0] < 900:
+            details = cached[1]
+        else:
+            try:
+                details = self.fr_api.get_flight_details(flight)
+            except Exception as detail_error:
+                details = None
+                if "403" in str(detail_error):
+                    self._detail_backoff_until = now + 900
+                print(
+                    "WARNING: Could not fetch details for "
+                    f"{getattr(flight, 'callsign', 'unknown')}: {detail_error}"
+                )
+            self._flight_detail_cache[flight_id] = (now, details)
+
+        if details:
+            flight.set_flight_details(details)
+
+        if len(self._flight_detail_cache) > 1_000:
+            self._flight_detail_cache = {
+                key: value
+                for key, value in self._flight_detail_cache.items()
+                if now - value[0] < 900
+            }
+
+    def _resolve_airport_name(self, code: str, provider_name: Optional[str]) -> str:
+        """Resolve a full airport name without relying on flight-detail access."""
+
+        if provider_name and provider_name != code:
+            return provider_name
+
+        if self._airport_names is None:
+            try:
+                airports = self.fr_api.get_airports()
+                self._airport_names = {
+                    str(airport_code): str(airport.name)
+                    for airport in airports
+                    for airport_code in (
+                        getattr(airport, "iata", None),
+                        getattr(airport, "icao", None),
+                    )
+                    if airport_code and getattr(airport, "name", None)
+                }
+            except Exception as airport_error:
+                print(f"WARNING: Could not load airport names: {airport_error}")
+                self._airport_names = {}
+
+        return self._airport_names.get(code, code)
     
     def _extract_airline(self, callsign: str) -> str:
         """Extract airline code from callsign.
@@ -265,3 +439,4 @@ class FlightTrackerService:
         """Clear cached geocoding data."""
         self.last_address = None
         self.last_coordinates = None
+        self.last_formatted_address = None

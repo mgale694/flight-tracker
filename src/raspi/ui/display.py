@@ -18,23 +18,23 @@ class Display:
         display_type = display_config.get("type", "waveshare213in_v4")
 
         # Initialize fonts
-        print("🔧 Initializing fonts...")
+        print("Initializing fonts...")
         try:
             fonts.init(config)
-            print("✓ Fonts initialized")
+            print("PASS: Fonts initialized")
         except Exception as e:
-            print(f"❌ Error initializing fonts: {e}")
+            print(f"FAIL: Error initializing fonts: {e}")
             logging.error(f"Error initializing fonts: {e}")
 
-        print(f"🖥️  Display Configuration:")
+        print("Display Configuration:")
         print(f"   - Enabled: {self._enabled}")
         print(f"   - Type: {display_type}")
         print(f"   - Rotation: {self._rotation}")
 
         # Initialize hardware display
-        print("🔧 Getting display implementation...")
+        print("Getting display implementation...")
         self._implementation = display_for(config)
-        print(f"✓ Display implementation: {self._implementation.name}")
+        print(f"PASS: Display implementation: {self._implementation.name}")
         print(f"   - Width: {self._implementation.width}")
         print(f"   - Height: {self._implementation.height}")
 
@@ -43,28 +43,28 @@ class Display:
         if self._enabled:
             self.init_display()
         else:
-            print("⚠️  Display is disabled in config")
+            print("WARNING: Display is disabled in config")
 
     def init_display(self):
         """Initialize the display hardware"""
         if self._enabled:
-            print("🔧 Initializing display hardware...")
+            print("Initializing display hardware...")
             logging.info("Initializing display")
             try:
                 self._implementation.initialize()
-                print("✓ Display hardware initialized")
+                print("PASS: Display hardware initialized")
             except Exception as e:
-                print(f"❌ Error during display initialize(): {e}")
+                print(f"FAIL: Error during display initialize(): {e}")
                 logging.error(f"Error during display initialize(): {e}")
 
             try:
                 self._implementation.clear()
-                print("✓ Display hardware cleared")
+                print("PASS: Display hardware cleared")
             except Exception as e:
-                print(f"❌ Error during display clear(): {e}")
+                print(f"FAIL: Error during display clear(): {e}")
                 logging.error(f"Error during display clear(): {e}")
         else:
-            print("⚠️  Display init skipped (disabled)")
+            print("WARNING: Display init skipped (disabled)")
 
     def render_boot(self, face, phrase):
         """Render boot screen"""
@@ -81,6 +81,12 @@ class Display:
         """Render flight information"""
         if self._enabled:
             self.view.render_flight_screen(flight, stats)
+
+    def update_fields(self, fields):
+        """Apply e-paper line choices received from the web settings page."""
+
+        if fields:
+            self.view.display_fields = list(fields)[:5]
 
     def clear(self):
         """Clear the display"""

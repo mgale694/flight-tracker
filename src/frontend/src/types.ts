@@ -78,4 +78,9 @@ export interface PairingStatus {
   authentication_mode: 'development' | 'production';
 }
 
-export type { Theme } from './theme';
+export interface LocationPreview {
+  query: string;
+  formatted_address: string;
+  latitude: number;
+  longitude: number;
+}

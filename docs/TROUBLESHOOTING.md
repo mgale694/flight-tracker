@@ -1,4 +1,4 @@
-# 🔧 Troubleshooting Guide
+# Troubleshooting Guide
 
 Common issues and solutions for Flight Tracker.
 
@@ -151,7 +151,7 @@ ERROR - Could not geocode address: [address]
 **Symptoms:**
 
 ```
-❌ Backend failed to start. Check logs: /tmp/flight-tracker-backend.log
+FAIL: Backend failed to start. Check logs: /tmp/flight-tracker-backend.log
 ```
 
 **Solution:**
@@ -371,10 +371,10 @@ tail -f /tmp/flight-tracker-*.log
 
 ```bash
 # Python modules
-python3 -c "import spidev; print('✅ spidev')"
-python3 -c "import gpiozero; print('✅ gpiozero')"
-python3 -c "import RPi.GPIO; print('✅ RPi.GPIO')"
-python3 -c "import lgpio; print('✅ lgpio')"
+python3 -c "import spidev; print('PASS: spidev')"
+python3 -c "import gpiozero; print('PASS: gpiozero')"
+python3 -c "import RPi.GPIO; print('PASS: RPi.GPIO')"
+python3 -c "import lgpio; print('PASS: lgpio')"
 
 # SPI enabled
 lsmod | grep spi

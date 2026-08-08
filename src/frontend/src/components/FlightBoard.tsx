@@ -16,7 +16,6 @@ export default function FlightBoard({ flights, currentFlights }: FlightBoardProp
   if (flights.length === 0) {
     return (
       <div className="flight-board-empty">
-        <div className="empty-icon">✈️</div>
         <p>No flights tracked yet</p>
         <p className="empty-hint">Waiting for aircraft to enter the tracking area...</p>
       </div>
@@ -72,7 +71,7 @@ export default function FlightBoard({ flights, currentFlights }: FlightBoardProp
                 <tr key={flight.id} className={`flight-row ${isActive ? 'active' : 'departed'}`}>
                   <td className="status-col">
                     <span className={`status-indicator ${isActive ? 'active' : 'departed'}`}>
-                      {isActive ? '🟢' : '⚪'}
+                      {isActive ? 'Active' : 'Departed'}
                     </span>
                   </td>
                   <td className="time-col">{formatTime(flight.timestamp)}</td>

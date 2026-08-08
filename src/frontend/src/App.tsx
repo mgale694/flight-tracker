@@ -1,8 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
-import { useEffect } from 'react';
 import './App.css';
-import { initializeTheme, useTheme } from './theme';
-import { ThemeSwitch } from './components/ThemeSwitch';
 import { FlightProvider } from './contexts/FlightContext';
 import Tracker from './pages/Tracker';
 import Activities from './pages/Activities';
@@ -10,12 +7,6 @@ import Settings from './pages/Settings';
 import Setup from './pages/Setup';
 
 function App() {
-  const [theme, setTheme] = useTheme();
-
-  useEffect(() => {
-    initializeTheme();
-  }, []);
-
   return (
     <Router>
       <div className="app">
@@ -49,7 +40,6 @@ function App() {
                 </NavLink>
               </nav>
               <NavLink to="/setup" className="setup-link">Add a display</NavLink>
-              <ThemeSwitch theme={theme} onThemeChange={setTheme} />
             </div>
           </header>
 

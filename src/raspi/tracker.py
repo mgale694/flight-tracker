@@ -45,6 +45,13 @@ class FlightTracker:
             return {"paired": True}
         device_id = self.config.get("main", {}).get("device_id", "dev-kit-001")
         return self.api_client.get_pairing_status(device_id)
+
+    def get_config(self) -> Optional[dict]:
+        """Return live backend configuration when available."""
+
+        if not self.use_backend:
+            return self.config
+        return self.api_client.get_config()
     
     def _get_flights_from_backend(self) -> List:
         """Get flights from backend API"""

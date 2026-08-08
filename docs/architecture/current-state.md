@@ -123,7 +123,7 @@ settings, and activity pages. Reusable prototype concepts include:
 
 - the 250 by 122 e-paper preview;
 - configurable display fields;
-- responsive CSS and theme tokens;
+- responsive CSS and shared design tokens;
 - a central API client;
 - session flight history and status displays.
 
@@ -209,6 +209,5 @@ These items require replacement tests before removal:
 - existing FastAPI endpoints until new consumers have moved;
 - FlightRadar parsing knowledge, extracted behind fixtures and an adapter;
 - the PIL e-paper rendering techniques and Waveshare driver isolation;
-- the web display preview and theme concepts;
+- the web display preview and responsive layout concepts;
 - working launch scripts until replacement development commands exist.
-

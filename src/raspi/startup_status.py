@@ -121,10 +121,10 @@ def show_status(message, step=None, total=None):
         rotated = image.rotate(180)
         display.render(rotated)
         
-        print(f"✅ Display updated: {message}")
+        print(f"PASS: Display updated: {message}")
         
     except Exception as e:
-        print(f"⚠️  Display error: {e}")
+        print(f"WARNING: Display error: {e}")
         print(f"   Message was: {message}")
 
 

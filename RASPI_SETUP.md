@@ -18,20 +18,16 @@ cd ~
 git clone https://github.com/mgale694/flight-tracker.git
 cd flight-tracker
 
-# 2. Install the runtime tools
-sudo apt-get update
-sudo apt-get install -y git make python3 python3-venv nodejs npm
+# 2. One-time OS, SPI, Waveshare, Python, npm, and web setup
+make setup
 
-# 3. Install GPIO system packages (for e-ink display)
-sudo ./scripts/install-gpio-packages.sh
-
-# 4. Enable SPI interface
-sudo raspi-config
-# Navigate: Interface Options → SPI → Enable → Reboot
-
-# 5. Build and run everything
+# 3. Run everything (reboot once first if setup says SPI is not ready)
 make pi
 ```
+
+`make setup` is idempotent. Run it again after provisioning changes; ordinary
+starts only need `make pi`. The frontend production build is cached and rebuilt
+only when its source or package metadata changes.
 
 Access from your laptop: The script will show you the URLs (e.g., `http://192.168.0.220:5173`)
 
@@ -175,7 +171,7 @@ To access from outside your home network, set up port forwarding on your router:
 - Forward external port → Pi IP:5173 (Frontend)
 - Forward external port → Pi IP:8000 (Backend)
 
-⚠️ **Security Note**: Consider setting up authentication if exposing to the internet!
+> Security note: add authentication before exposing the service to the internet.
 
 ## Troubleshooting
 

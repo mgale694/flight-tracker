@@ -136,7 +136,7 @@ export default function Activities() {
 
       {error && (
         <div className="activities-error">
-          <p>❌ {error}</p>
+          <p>Error: {error}</p>
         </div>
       )}
 

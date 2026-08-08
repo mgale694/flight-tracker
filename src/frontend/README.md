@@ -79,7 +79,7 @@ src/
 ├── theme.ts                 # Theme management system
 │
 ├── components/              # Reusable components
-│   ├── ThemeSwitch.tsx     # Theme toggle component
+│   ├── Settings.tsx        # Configuration controls
 │   ├── WaveshareDisplay.tsx # E-ink display simulator
 │   ├── FlightBoard.tsx     # Flight table component
 │   ├── Settings.tsx        # Configuration form

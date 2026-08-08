@@ -10,16 +10,20 @@ DOCTOR_PYTHON = $(or $(wildcard $(DEV_PYTHON)),$(wildcard $(PI_PYTHON)),$(shell 
 DEV_STAMP := $(DEV_VENV)/.flight-tracker-installed
 PI_STAMP := $(PI_VENV)/.flight-tracker-installed
 WEB_STAMP := src/frontend/node_modules/.flight-tracker-installed
+WEB_BUILD_STAMP := src/frontend/dist/.flight-tracker-built
+WEB_SOURCES := $(shell find src/frontend/src src/frontend/public -type f 2>/dev/null)
+WAVESHARE_DRIVER := src/raspi/ui/hw/libs/waveshare/epd2in13_V4.py
 
-.PHONY: help install install-pi dev pi stop status doctor test lint format \
+.PHONY: help setup install install-pi dev pi stop status doctor test lint format \
 	backend web device web-build check-python
 
 help: ## Show the available project commands
 	@printf '%s\n' \
 		'Flight Tracker development commands' \
 		'' \
+		'  make setup     Provision a Raspberry Pi and build the application' \
 		'  make dev       Install missing dependencies and run API + web' \
-		'  make pi        Build web and run API + web + e-paper client' \
+		'  make pi        Run API + cached web build + e-paper client' \
 		'  make stop      Stop a stack started by make dev or make pi' \
 		'  make status    Show managed process status' \
 		'  make doctor    Verify tools, managed processes, API, web, and proxy' \
@@ -28,6 +32,12 @@ help: ## Show the available project commands
 		'  make format    Apply Ruff and frontend ESLint fixes' \
 		'  make install   Install laptop backend/tooling and web dependencies' \
 		'  make install-pi Install the isolated Raspberry Pi runtime'
+
+setup: ## Provision Raspberry Pi packages, display driver, runtimes, and web build
+	@./scripts/setup-pi.sh
+	@$(MAKE) --no-print-directory install-pi
+	@$(MAKE) --no-print-directory web-build
+	@printf '\nSetup complete. Start Flight Tracker with: make pi\n'
 
 install: $(DEV_STAMP) $(WEB_STAMP) ## Install laptop development dependencies
 
@@ -60,6 +70,10 @@ dev: install ## Run the local API and Vite development server
 	@$(PYTHON) scripts/run_stack.py dev --python $(DEV_PYTHON)
 
 pi: install-pi web-build ## Run the production-style Raspberry Pi stack
+	@if command -v raspi-config >/dev/null && [ ! -f $(WAVESHARE_DRIVER) ]; then \
+		echo 'Waveshare driver is missing. Run `make setup` first.'; \
+		exit 1; \
+	fi
 	@$(PYTHON) scripts/run_stack.py pi --python $(PI_PYTHON)
 
 stop: ## Stop managed local or Pi processes
@@ -77,6 +91,7 @@ test: install install-pi ## Run backend, device simulator, and frontend verifica
 	@cd src/raspi && ../../$(PI_PYTHON) -m unittest discover -s tests -v
 	@$(DEV_PYTHON) -m compileall -q apps/api/flight_tracker src/backend src/raspi
 	@npm --prefix src/frontend run build
+	@touch $(WEB_BUILD_STAMP)
 
 lint: install ## Run Python and TypeScript quality checks
 	@$(DEV_PYTHON) -m ruff check apps/api/flight_tracker apps/api/tests scripts/run_stack.py
@@ -103,5 +118,11 @@ web: $(WEB_STAMP) ## Run only the Vite development server
 device: $(PI_STAMP) ## Run only the Raspberry Pi display client
 	@cd src/raspi && ../../$(PI_PYTHON) agent.py
 
-web-build: $(WEB_STAMP) ## Build the web application for production-style serving
+web-build: $(WEB_BUILD_STAMP) ## Build the web application when its sources changed
+
+$(WEB_BUILD_STAMP): $(WEB_STAMP) $(WEB_SOURCES) src/frontend/index.html \
+		src/frontend/package.json src/frontend/package-lock.json \
+		src/frontend/tsconfig.json src/frontend/tsconfig.app.json \
+		src/frontend/vite.config.ts .git/index
 	@npm --prefix src/frontend run build
+	@touch $(WEB_BUILD_STAMP)

@@ -30,7 +30,7 @@ class Waveshare213V4(DisplayImpl):
             self._display = EPD()
             self._display.init()
             self._display.Clear()
-            logging.info("✓ Waveshare 2.13in V4 display initialized successfully")
+            logging.info("PASS: Waveshare 2.13in V4 display initialized successfully")
         except ImportError as e:
             logging.error(
                 f"Cannot import Waveshare EPD module (missing Pi libraries): {e}"
@@ -77,6 +77,18 @@ class Waveshare213V4(DisplayImpl):
                 self._display.display(buf)
         except Exception as e:
             logging.error(f"Error rendering to display: {e}")
+
+    def render_full(self, canvas):
+        """Use a full panel refresh for dense, high-contrast content such as QR codes."""
+
+        if self._display is None:
+            logging.warning("Display not initialized, skipping full refresh")
+            return
+
+        try:
+            self._display.display(self._display.getbuffer(canvas))
+        except Exception as e:
+            logging.error(f"Error performing full display refresh: {e}")
 
     def clear(self):
         """Clear the display"""

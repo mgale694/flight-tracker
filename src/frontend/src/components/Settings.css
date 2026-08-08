@@ -1,5 +1,5 @@
 .settings {
-  max-width: 600px;
+  max-width: 860px;
 }
 
 .settings h2 {
@@ -63,6 +63,38 @@
   width: 100%;
 }
 
+.address-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+}
+
+.address-entry .btn {
+  white-space: nowrap;
+}
+
+.location-error {
+  color: var(--color-error);
+  font-size: 0.8rem;
+}
+
+.viewing-settings {
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.viewing-settings h3 {
+  margin-bottom: 0.3rem;
+}
+
+.viewing-settings > div > p {
+  margin-bottom: 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+}
+
 .form-actions {
   display: flex;
   gap: var(--spacing-md);
@@ -101,4 +133,10 @@
 
 .btn-warning:hover:not(:disabled) {
   background-color: #f57c00;
+}
+
+@media (max-width: 560px) {
+  .address-entry {
+    grid-template-columns: 1fr;
+  }
 }

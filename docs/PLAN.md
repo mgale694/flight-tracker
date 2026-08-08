@@ -3,7 +3,7 @@
 **Project Goal**: Build a complete flight tracking system with backend API, web frontend, and Raspberry Pi e-ink display client.
 
 **Date Created**: 14 December 2025  
-**Status**: Phase 3 Complete - Raspberry Pi Client Ready! ✅✅✅
+**Status**: Phase 3 complete - Raspberry Pi client ready
 
 ---
 
@@ -28,21 +28,21 @@ flight-tracker/
 
 ### Tasks
 
-- [x] **1.1 Project Setup** ✅
+- [x] **1.1 Project Setup**
 
   - [x] Create `src/backend/` structure
   - [x] Set up `requirements.txt` with dependencies
   - [x] Create `config.toml` with default configuration
   - [x] Set up `.gitignore` for Python
 
-- [x] **1.2 Core Flight Tracker** ✅
+- [x] **1.2 Core Flight Tracker**
 
   - [x] Implement `tracker.py` with FlightRadar24 integration
   - [x] Geocoding functionality (address → coordinates)
   - [x] Flight filtering by radius
   - [x] Flight data model/schema
 
-- [x] **1.3 FastAPI Server** ✅
+- [x] **1.3 FastAPI Server**
 
   - [x] Create `main.py` with FastAPI app
   - [x] Implement GET `/api/flights` endpoint
@@ -52,14 +52,14 @@ flight-tracker/
   - [x] Implement GET `/api/health` endpoint
   - [x] Add CORS middleware for frontend access
 
-- [x] **1.4 Activity Logging System** ✅
+- [x] **1.4 Activity Logging System**
 
   - [x] Create logging utility with categories
   - [x] In-memory activity log storage
   - [x] Log rotation/limits
   - [x] Integration with all endpoints
 
-- [x] **1.5 Testing & Documentation** ✅
+- [x] **1.5 Testing & Documentation**
   - [x] Create README.md with setup instructions
   - [x] Manual API testing ready
   - [x] Document all endpoints
@@ -81,35 +81,35 @@ flight-tracker/
 
 ### Tasks
 
-- [x] **2.1 Project Setup** ✅
+- [x] **2.1 Project Setup**
 
   - [x] Create `src/frontend/` structure
   - [x] Initialize Vite + React + TypeScript project
   - [x] Set up dependencies (react-router-dom, etc.)
   - [x] Configure Vite for dev server
 
-- [x] **2.2 Core Infrastructure** ✅
+- [x] **2.2 Core Infrastructure**
 
   - [x] Create TypeScript types (`types.ts`)
   - [x] Implement API client (`api.ts`)
-  - [x] Set up theme system (`theme.ts`) with useTheme hook
+  - [x] Set up a consistent light-only visual system
   - [x] Create main App component with routing
   - [x] Design global CSS with custom properties
 
-- [x] **2.3 Components** ✅
+- [x] **2.3 Components**
 
   - [x] `WaveshareDisplay.tsx` - E-ink display simulator (250x122)
   - [x] `FlightBoard.tsx` - Table view of flights
-  - [x] `ThemeSwitch.tsx` - Light/dark/auto theme toggle
+  - [x] Responsive navigation and application shell
   - [x] `Settings.tsx` - Configuration form
 
-- [x] **2.4 Pages** ✅
+- [x] **2.4 Pages**
 
   - [x] `Tracker.tsx` - Main page with display + flight board + settings
   - [x] `Activities.tsx` - Activity log viewer with filtering
   - [x] Navigation between pages
 
-- [x] **2.5 Features** ✅
+- [x] **2.5 Features**
 
   - [x] Polling system (3-5 second intervals)
   - [x] Real-time flight updates
@@ -118,40 +118,40 @@ flight-tracker/
   - [x] Session statistics display
   - [x] Responsive design
 
-- [x] **2.6 Testing & Documentation** ✅
+- [x] **2.6 Testing & Documentation**
   - [x] Create README.md with comprehensive documentation
   - [x] Startup script created
   - [x] Ready for manual testing
 
 **Dependencies**: react, react-dom, react-router-dom, typescript, vite
 
-**Success Criteria**: ✅ ALL COMPLETE
+**Success Criteria**: ALL COMPLETE
 
-- ✅ Frontend runs on `http://localhost:5173`
-- ✅ Can view live flights from backend
-- ✅ Can update configuration via Settings page
-- ✅ Display simulator accurately represents e-ink screen
-- ✅ Theme switching works correctly (light/dark/auto)
-- ✅ Activity logs visible with filtering
-- ✅ Session statistics tracking
+- Frontend runs on `http://localhost:5173`
+- Can view live flights from backend
+- Can update configuration via Settings page
+- Display simulator accurately represents e-ink screen
+- A consistent light appearance is used throughout
+- Activity logs visible with filtering
+- Session statistics tracking
 
 ---
 
-## Phase 3: Raspberry Pi Client (Hardware Integration) ✅
+## Phase 3: Raspberry Pi Client (Hardware Integration)
 
 **Priority**: MEDIUM - Hardware component, can develop after backend/frontend  
 **Status**: COMPLETE
 
 ### Tasks
 
-- [x] **3.1 Project Setup** ✅
+- [x] **3.1 Project Setup**
 
   - [x] Create `src/raspi/` structure
   - [x] Set up `requirements.txt` with dependencies
   - [x] Create `config.toml` for raspi-specific config
   - [x] Set up `__init__.py` files
 
-- [x] **3.2 Core Components** ✅
+- [x] **3.2 Core Components**
 
   - [x] `tracker.py` - Flight tracking logic (API + standalone modes)
   - [x] `agent.py` - Main agent with boot sequence
@@ -159,13 +159,13 @@ flight-tracker/
   - [x] `log.py` - Session logging system
   - [x] `faces.py` - ASCII art faces for boot screen
 
-- [x] **3.3 API Client** ✅
+- [x] **3.3 API Client**
 
   - [x] `api_client.py` - Backend API client
   - [x] Connection error handling
   - [x] Health checks
 
-- [x] **3.4 UI System** ✅
+- [x] **3.4 UI System**
 
   - [x] `ui/__init__.py`
   - [x] `ui/display.py` - Main display controller
@@ -174,7 +174,7 @@ flight-tracker/
   - [x] Boot screen renderer
   - [x] Flight screen renderer
 
-- [x] **3.5 Hardware Drivers** ✅
+- [x] **3.5 Hardware Drivers**
 
   - [x] `ui/hw/__init__.py`
   - [x] `ui/hw/base.py` - Base display interface
@@ -182,7 +182,7 @@ flight-tracker/
   - [x] Setup guides for Waveshare libraries
   - [x] Setup guides for fonts
 
-- [x] **3.6 Testing & Documentation** ✅
+- [x] **3.6 Testing & Documentation**
   - [x] Comprehensive README.md with setup instructions
   - [x] Raspberry Pi hardware setup guide (SPI, GPIO)
   - [x] Systemd service configuration
@@ -193,12 +193,12 @@ flight-tracker/
 
 **Success Criteria**:
 
-- ✅ Raspi client can run in standalone mode
-- ✅ Raspi client can connect to backend API
-- ✅ E-ink display shows boot screen
-- ✅ Flights cycle on display
-- ✅ Session statistics are tracked
-- ✅ Graceful fallback when hardware unavailable
+- Raspi client can run in standalone mode
+- Raspi client can connect to backend API
+- E-ink display shows boot screen
+- Flights cycle on display
+- Session statistics are tracked
+- Graceful fallback when hardware unavailable
 - Configuration is respected
 
 ---
@@ -369,7 +369,7 @@ interface Flight {
 ### Testing Strategy
 
 - **Backend**: Manual API testing with curl/Postman, then automated tests
-- **Frontend**: Browser testing, multiple themes, responsive design
+- **Frontend**: Browser testing, light appearance, responsive design
 - **Raspberry Pi**: Mock display first, then real hardware testing
 - **Integration**: Full end-to-end testing with all components running
 

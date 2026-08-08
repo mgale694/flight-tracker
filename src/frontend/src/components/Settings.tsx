@@ -2,10 +2,11 @@
  * Settings component for configuration management
  */
 
-import { useState, useEffect } from 'react';
-import type { ConfigUpdate } from '../types';
+import { useCallback, useEffect, useState } from 'react';
+import type { ConfigUpdate, LocationPreview } from '../types';
 import { api } from '../api';
 import DisplayFieldSelector from './DisplayFieldSelector';
+import ViewingZoneEditor from './ViewingZoneEditor';
 import './Settings.css';
 
 export default function Settings() {
@@ -13,14 +14,31 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [locationPreview, setLocationPreview] = useState<LocationPreview | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [resolvingLocation, setResolvingLocation] = useState(false);
 
   const [formData, setFormData] = useState<ConfigUpdate>({});
 
-  useEffect(() => {
-    loadConfig();
+  const resolveLocation = useCallback(async (address: string) => {
+    setResolvingLocation(true);
+    setLocationError(null);
+    try {
+      const preview = await api.previewLocation(address.trim());
+      setLocationPreview(preview);
+      return preview;
+    } catch (locationFailure) {
+      const message = locationFailure instanceof Error
+        ? locationFailure.message
+        : 'Could not resolve that location';
+      setLocationError(message);
+      throw locationFailure;
+    } finally {
+      setResolvingLocation(false);
+    }
   }, []);
 
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -37,12 +55,21 @@ export default function Settings() {
         min_distance_km: data.viewing_zone?.min_distance_km,
         max_distance_km: data.viewing_zone?.max_distance_km,
       });
+      try {
+        await resolveLocation(data.main.address);
+      } catch {
+        // The form remains usable for correcting an address that cannot be resolved.
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load configuration');
     } finally {
       setLoading(false);
     }
-  };
+  }, [resolveLocation]);
+
+  useEffect(() => {
+    void loadConfig();
+  }, [loadConfig]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +79,7 @@ export default function Settings() {
       setError(null);
       setSuccess(false);
       
+      await resolveLocation(formData.address || '');
       await api.updateConfig(formData);
       setSuccess(true);
       
@@ -65,6 +93,14 @@ export default function Settings() {
 
   const handleInputChange = (field: keyof ConfigUpdate, value: string | number | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleViewingDistanceChange = (value: number) => {
+    setFormData(prev => ({
+      ...prev,
+      max_distance_km: value,
+      search_radius_meters: value * 1000,
+    }));
   };
 
   const handleClearDisplay = async () => {
@@ -114,35 +150,55 @@ export default function Settings() {
       <form onSubmit={handleSubmit} className="settings-form">
         <div className="form-group">
           <label htmlFor="address">
-            Window location
-            <span className="label-hint">Your precise location stays in the product backend</span>
+            Full window address
+            <span className="label-hint">A house number and street gives a clearer origin than a postcode alone</span>
           </label>
-          <input
-            type="text"
-            id="address"
-            value={formData.address || ''}
-            onChange={(e) => handleInputChange('address', e.target.value)}
-            placeholder="e.g., San Francisco, CA"
-            required
-          />
+          <div className="address-entry">
+            <input
+              type="text"
+              id="address"
+              autoComplete="street-address"
+              value={formData.address || ''}
+              onChange={(event) => {
+                handleInputChange('address', event.target.value);
+                setLocationPreview(null);
+                setLocationError(null);
+              }}
+              onBlur={() => {
+                if ((formData.address || '').trim().length >= 3) {
+                  void resolveLocation(formData.address || '').catch(() => undefined);
+                }
+              }}
+              placeholder="10 Downing Street, London, SW1A 2AA"
+              required
+            />
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={resolvingLocation || (formData.address || '').trim().length < 3}
+              onClick={() => void resolveLocation(formData.address || '').catch(() => undefined)}
+            >
+              {resolvingLocation ? 'Finding address…' : 'Update map'}
+            </button>
+          </div>
+          {locationError && <span className="location-error">{locationError}</span>}
         </div>
         
-        <div className="form-group">
-          <label htmlFor="radius">
-            Legacy nearby radius (metres)
-            <span className="label-hint">Used until all live queries consume the viewing zone</span>
-          </label>
-          <input
-            type="number"
-            id="radius"
-            value={formData.search_radius_meters || ''}
-            onChange={(e) => handleInputChange('search_radius_meters', parseInt(e.target.value))}
-            min="100"
-            max="50000"
-            step="100"
-            required
+        <section className="viewing-settings">
+          <div>
+            <h3>Visible sky</h3>
+            <p>Match the direction, angle, and clear distance from your window.</p>
+          </div>
+          <ViewingZoneEditor
+            bearing={formData.bearing_degrees ?? 0}
+            fieldOfView={formData.field_of_view_degrees ?? 80}
+            maxDistance={formData.max_distance_km ?? 35}
+            location={locationPreview}
+            onBearingChange={(value) => handleInputChange('bearing_degrees', value)}
+            onFieldOfViewChange={(value) => handleInputChange('field_of_view_degrees', value)}
+            onMaxDistanceChange={handleViewingDistanceChange}
           />
-        </div>
+        </section>
         
         <div className="form-group">
           <label htmlFor="maxFlights">
@@ -197,7 +253,7 @@ export default function Settings() {
         <div className="form-group">
           <label>
             E-ink Display Fields
-            <span className="label-hint">Choose up to 5 fields • Drag to reorder</span>
+            <span className="label-hint">Choose up to five lines and set their order</span>
           </label>
           <DisplayFieldSelector
             selectedFields={formData.display_fields || []}

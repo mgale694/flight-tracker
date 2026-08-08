@@ -16,7 +16,7 @@ logging.basicConfig(
 
 def test_imports():
     """Test that all required modules can be imported"""
-    print("\n🔍 Testing Python Module Imports...")
+    print("\nTesting Python Module Imports...")
     print("=" * 50)
     
     modules = {
@@ -30,16 +30,16 @@ def test_imports():
     for module, description in modules.items():
         try:
             __import__(module)
-            print(f"✅ {module:12} - {description}")
+            print(f"PASS: {module:12} - {description}")
         except ImportError as e:
-            print(f"❌ {module:12} - {description} - ERROR: {e}")
+            print(f"FAIL: {module:12} - {description} - ERROR: {e}")
             all_ok = False
     
     return all_ok
 
 def test_waveshare_library():
     """Test that Waveshare library files exist and can be imported"""
-    print("\n🔍 Testing Waveshare Library Files...")
+    print("\nTesting Waveshare Library Files...")
     print("=" * 50)
     
     # Add parent directory to path
@@ -48,16 +48,16 @@ def test_waveshare_library():
     
     try:
         from ui.hw.libs.waveshare import epd2in13_V4
-        print("✅ Waveshare library files found and importable")
+        print("PASS: Waveshare library files found and importable")
         print(f"   Location: {epd2in13_V4.__file__}")
         return True
     except ImportError as e:
-        print(f"❌ Cannot import Waveshare library: {e}")
+        print(f"FAIL: Cannot import Waveshare library: {e}")
         return False
 
 def test_display_init():
     """Test actual display initialization"""
-    print("\n🔍 Testing Display Initialization...")
+    print("\nTesting Display Initialization...")
     print("=" * 50)
     
     script_dir = Path(__file__).parent.absolute()
@@ -72,24 +72,24 @@ def test_display_init():
         print("Initializing display...")
         epd.init()
         
-        print("✅ Display initialized successfully!")
+        print("PASS: Display initialized successfully!")
         
         print("Clearing display...")
         epd.Clear()
         
-        print("✅ Display cleared successfully!")
+        print("PASS: Display cleared successfully!")
         
         return epd
         
     except Exception as e:
-        print(f"❌ Display initialization failed: {e}")
+        print(f"FAIL: Display initialization failed: {e}")
         import traceback
         traceback.print_exc()
         return None
 
 def test_display_render():
     """Test rendering an image to the display"""
-    print("\n🔍 Testing Display Render...")
+    print("\nTesting Display Render...")
     print("=" * 50)
     
     try:
@@ -109,7 +109,7 @@ def test_display_render():
         draw.text((10, 70), "Raspberry Pi", fill=0)
         draw.text((10, 90), "2.13in V4", fill=0)
         
-        print("✅ Test image created")
+        print("PASS: Test image created")
         
         # Initialize display
         epd = test_display_init()
@@ -121,8 +121,8 @@ def test_display_render():
         buf = epd.getbuffer(image)
         epd.display(buf)
         
-        print("✅ Image rendered to display successfully!")
-        print("\n🎉 Check your e-ink display - you should see the test pattern!")
+        print("PASS: Image rendered to display successfully!")
+        print("\nCheck your e-ink display - you should see the test pattern!")
         
         # Keep display on for a bit
         print("\nDisplay will remain on. Press Ctrl+C to clear and exit...")
@@ -132,21 +132,21 @@ def test_display_render():
         # Clear on exit
         print("\nClearing display...")
         epd.Clear()
-        print("✅ Display cleared")
+        print("PASS: Display cleared")
         
         return True
         
     except KeyboardInterrupt:
-        print("\n\n🛑 Test interrupted by user")
+        print("\n\nTest interrupted by user")
         try:
             epd.Clear()
-            print("✅ Display cleared")
+            print("PASS: Display cleared")
         except:
             pass
         return True
         
     except Exception as e:
-        print(f"❌ Render test failed: {e}")
+        print(f"FAIL: Render test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -161,7 +161,7 @@ def main():
     imports_ok = test_imports()
     
     if not imports_ok:
-        print("\n❌ FAILED: Missing required Python modules")
+        print("\nFAIL: Missing required Python modules")
         print("\nFix with:")
         print("  pip3 install spidev gpiozero RPi.GPIO Pillow")
         print("  or")
@@ -172,7 +172,7 @@ def main():
     library_ok = test_waveshare_library()
     
     if not library_ok:
-        print("\n❌ FAILED: Waveshare library not found")
+        print("\nFAIL: Waveshare library not found")
         print("\nFix with:")
         print("  ./scripts/install-waveshare.sh")
         return False
@@ -182,14 +182,14 @@ def main():
     
     if render_ok:
         print("\n" + "=" * 50)
-        print("✅ ALL TESTS PASSED!")
+        print("PASS: ALL TESTS PASSED!")
         print("=" * 50)
         print("\nYour display hardware is working correctly.")
         print("The flight tracker should now work with the display.")
         return True
     else:
         print("\n" + "=" * 50)
-        print("❌ DISPLAY TEST FAILED")
+        print("FAIL: DISPLAY TEST FAILED")
         print("=" * 50)
         print("\nPossible issues:")
         print("  1. SPI not enabled: sudo raspi-config → Interface Options → SPI")
@@ -203,5 +203,5 @@ if __name__ == "__main__":
         success = main()
         sys.exit(0 if success else 1)
     except KeyboardInterrupt:
-        print("\n\n🛑 Test interrupted by user")
+        print("\n\nTest interrupted by user")
         sys.exit(0)

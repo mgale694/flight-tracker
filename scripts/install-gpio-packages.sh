@@ -4,27 +4,27 @@
 
 set -e
 
-echo "📦 Installing GPIO System Packages"
+echo "Installing GPIO System Packages"
 echo "=================================="
 echo ""
 
 # Check if running as root
 if [ "$EUID" -ne 0 ]; then 
-    echo "❌ Please run as root: sudo $0"
+    echo "FAIL: Please run as root: sudo $0"
     exit 1
 fi
 
 # Check if on Raspberry Pi
 if ! command -v raspi-config &> /dev/null; then
-    echo "❌ Not running on Raspberry Pi"
+    echo "FAIL: Not running on Raspberry Pi"
     exit 1
 fi
 
-echo "📥 Updating package lists..."
+echo "Updating package lists..."
 apt-get update
 
 echo ""
-echo "📦 Installing GPIO and SPI packages..."
+echo "Installing GPIO and SPI packages..."
 apt-get install -y \
     python3-spidev \
     python3-gpiozero \
@@ -33,15 +33,15 @@ apt-get install -y \
     python3-pil
 
 echo ""
-echo "✅ System packages installed!"
+echo "PASS: System packages installed!"
 echo ""
-echo "📋 Verifying installation..."
-python3 -c "import spidev; print('✅ spidev')" 2>/dev/null || echo "❌ spidev"
-python3 -c "import gpiozero; print('✅ gpiozero')" 2>/dev/null || echo "❌ gpiozero"
-python3 -c "import RPi.GPIO; print('✅ RPi.GPIO')" 2>/dev/null || echo "❌ RPi.GPIO"
-python3 -c "import lgpio; print('✅ lgpio')" 2>/dev/null || echo "❌ lgpio"
+echo "Verifying installation..."
+python3 -c "import spidev; print('PASS: spidev')" 2>/dev/null || echo "FAIL: spidev"
+python3 -c "import gpiozero; print('PASS: gpiozero')" 2>/dev/null || echo "FAIL: gpiozero"
+python3 -c "import RPi.GPIO; print('PASS: RPi.GPIO')" 2>/dev/null || echo "FAIL: RPi.GPIO"
+python3 -c "import lgpio; print('PASS: lgpio')" 2>/dev/null || echo "FAIL: lgpio"
 
 echo ""
-echo "✅ Done! Now run:"
+echo "PASS: Done! Now run:"
 echo "   ./scripts/test-display.sh"
 echo "   ./scripts/start-raspi-all.sh"

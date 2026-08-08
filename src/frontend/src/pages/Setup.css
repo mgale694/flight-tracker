@@ -154,96 +154,6 @@
   color: var(--color-error);
 }
 
-.viewing-preview-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.8fr);
-  gap: 1.5rem;
-  margin: 0.75rem 0;
-}
-
-.viewing-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.viewing-controls fieldset {
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.cardinal-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.35rem;
-  margin-top: 0.6rem;
-}
-
-.cardinal-grid button {
-  min-height: 2.5rem;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: 0.75rem;
-}
-
-.cardinal-grid button.selected {
-  border-color: var(--color-primary);
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-}
-
-.viewing-controls input[type='range'] {
-  width: 100%;
-  accent-color: var(--color-primary);
-}
-
-.viewing-diagram {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-background);
-  text-align: center;
-}
-
-.viewing-diagram svg {
-  width: 100%;
-  max-width: 250px;
-  color: var(--color-text-secondary);
-}
-
-.viewing-sector {
-  fill: var(--color-primary-soft);
-  stroke: var(--color-primary);
-  stroke-width: 1.5;
-}
-
-.observer {
-  fill: var(--color-text-primary);
-  stroke: var(--color-surface);
-  stroke-width: 4;
-}
-
-.north-marker {
-  stroke: var(--color-text-secondary);
-}
-
-.viewing-diagram strong {
-  margin-top: 0.5rem;
-}
-
-.viewing-diagram span {
-  color: var(--color-text-secondary);
-  font-size: 0.78rem;
-}
-
 .setup-complete {
   align-items: flex-start;
   justify-content: center;
@@ -251,14 +161,15 @@
 }
 
 .complete-mark {
-  display: grid;
-  width: 4rem;
-  height: 4rem;
-  place-items: center;
-  border-radius: 50%;
+  display: inline-flex;
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--radius-pill);
   background: var(--color-primary-soft);
   color: var(--color-primary);
-  font-size: 1.7rem;
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 @media (max-width: 860px) {
@@ -282,8 +193,7 @@
     padding: 1.25rem;
   }
 
-  .pairing-fields,
-  .viewing-preview-grid {
+  .pairing-fields {
     grid-template-columns: 1fr;
   }
 }

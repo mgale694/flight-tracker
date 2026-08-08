@@ -8,6 +8,24 @@ sys.path.append('..')
 from utils import safe_getattr, truncate_string
 
 
+def fit_text_to_width(draw, text, font, max_width, suffix="..."):
+    """Truncate text with an ellipsis using rendered width, not character count."""
+
+    if draw.textbbox((0, 0), text, font=font)[2] <= max_width:
+        return text
+
+    low = 0
+    high = len(text)
+    while low < high:
+        midpoint = (low + high + 1) // 2
+        candidate = text[:midpoint].rstrip() + suffix
+        if draw.textbbox((0, 0), candidate, font=font)[2] <= max_width:
+            low = midpoint
+        else:
+            high = midpoint - 1
+    return text[:low].rstrip() + suffix
+
+
 class FlightView:
     """Handles rendering flight information to the display"""
 
@@ -82,7 +100,8 @@ class FlightView:
         draw.text((text_x, 82), "PAIRING CODE", font=fonts.Small, fill=0)
         draw.text((text_x, 96), pairing_code, font=fonts.BoldBig, fill=0)
 
-        self.display.render(image.rotate(180))
+        # QR modules need a full refresh: partial refreshes can look grey on e-paper.
+        self.display.render_full(image.rotate(180))
 
     def render_flight_screen(self, flight, stats):
         """Render flight information screen with configurable fields"""
@@ -104,16 +123,23 @@ class FlightView:
         dest_name = safe_getattr(flight, 'destination_name', None)
         dest_code = safe_getattr(flight, 'destination', 'N/A')
         
-        # Display full name with code, or just code if name not available
+        # Prefer the full airport name; retain the code as a reliable fallback.
         if origin_name and origin_name != origin_code:
-            origin_display = f"{origin_name} ({origin_code})"
+            origin_display = origin_name
         else:
             origin_display = origin_code
             
         if dest_name and dest_name != dest_code:
-            dest_display = f"{dest_name} ({dest_code})"
+            dest_display = dest_name
         else:
             dest_display = dest_code
+
+        origin_label = fit_text_to_width(
+            draw, f"FROM: {origin_display}", fonts.Medium, self.width - 10
+        )
+        destination_label = fit_text_to_width(
+            draw, f"TO: {dest_display}", fonts.Medium, self.width - 10
+        )
         
         # For route, always use airport codes
         origin_route = origin_code
@@ -122,8 +148,8 @@ class FlightView:
         # Map all available field IDs to their display strings
         field_data = {
             # Basic fields (user-friendly names)
-            "FROM": truncate_string(f"FROM: {origin_display}", 32),
-            "TO": truncate_string(f"TO: {dest_display}", 32),
+            "FROM": origin_label,
+            "TO": destination_label,
             "AIRLINE": f"AIRLINE: {safe_getattr(flight, 'airline_name', None) or safe_getattr(flight, 'airline', 'N/A')}",
             "MODEL": f"MODEL: {safe_getattr(flight, 'aircraft_model', None) or safe_getattr(flight, 'aircraft', 'Unknown')}",
             "REG": f"REG: {safe_getattr(flight, 'registration', 'N/A')}",
@@ -148,14 +174,14 @@ class FlightView:
             "airline_icao": f"AL ICAO: {safe_getattr(flight, 'airline_icao', 'N/A')}",
             
             "origin": f"FROM: {origin_code}",
-            "origin_name": truncate_string(f"FROM: {origin_display}", 32),
+            "origin_name": origin_label,
             "origin_airport_icao": f"ORIG ICAO: {safe_getattr(flight, 'origin_airport_icao', 'N/A')}",
             "origin_airport_country_name": f"FROM: {safe_getattr(flight, 'origin_airport_country_name', 'N/A')}",
             "origin_airport_gate": f"GATE: {safe_getattr(flight, 'origin_airport_gate', 'N/A')}",
             "origin_airport_terminal": f"TERM: {safe_getattr(flight, 'origin_airport_terminal', 'N/A')}",
             
             "destination": f"TO: {dest_code}",
-            "destination_name": truncate_string(f"TO: {dest_display}", 32),
+            "destination_name": destination_label,
             "destination_airport_icao": f"DEST ICAO: {safe_getattr(flight, 'destination_airport_icao', 'N/A')}",
             "destination_airport_country_name": f"TO: {safe_getattr(flight, 'destination_airport_country_name', 'N/A')}",
             "destination_airport_gate": f"GATE: {safe_getattr(flight, 'destination_airport_gate', 'N/A')}",

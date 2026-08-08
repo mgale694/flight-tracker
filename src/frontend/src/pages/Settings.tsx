@@ -10,7 +10,7 @@ export default function Settings() {
     <div className="settings-page">
       <div className="settings-header">
         <h1>Settings</h1>
-        <p className="settings-subtitle">Configure your flight tracking preferences</p>
+        <p className="settings-subtitle">Tune the sky outside your window and the e-paper layout.</p>
       </div>
       
       <div className="settings-content">
@@ -20,15 +20,14 @@ export default function Settings() {
           <h3>Location</h3>
           <ul>
             <li><strong>Address formats:</strong> Enter any recognizable address, postcode, or place name</li>
-            <li><strong>Examples:</strong> "123 Main St, London, UK", "SW1A 1AA", "Heathrow Airport"</li>
-            <li><strong>Radius:</strong> Set higher for airports (15-50km), lower for residential areas (3-10km)</li>
-            <li><strong>Max flights:</strong> More flights = more data but slower updates</li>
+            <li><strong>Direction:</strong> Point the cone where the window faces</li>
+            <li><strong>Distance:</strong> Choose how far you can clearly see from that window</li>
           </ul>
           
           <h3>Display</h3>
           <ul>
-            <li><strong>Hold Time:</strong> Keeps the last flight on display even after it leaves the area</li>
-            <li><strong>Recommended:</strong> 30-60 seconds to avoid blank screens between flights</li>
+            <li><strong>Fields:</strong> Use each dropdown to choose an e-paper line</li>
+            <li><strong>Order:</strong> Move lines with the arrow buttons—no dragging required</li>
           </ul>
           
           <h3>After saving</h3>

@@ -102,7 +102,7 @@ cache reuse.
 - Generate or validate shared TypeScript contracts from the versioned API.
 - Build mobile-first routes for setup, location, window direction, sector
   preview, device dashboard/settings/history, and display simulator.
-- Reuse the existing preview/theme ideas without recreating the dashboard as
+- Reuse the existing preview/layout ideas without recreating the dashboard as
   the primary product.
 - Fix the current Vite lint baseline as code is migrated; keep the Vite app
   available until the new critical flows pass.
@@ -167,4 +167,3 @@ The first code slice implements, without changing current runtime paths:
 
 This slice creates the seam required for later FastAPI, persistence, web, and
 device migration while keeping the existing prototype usable.
-
