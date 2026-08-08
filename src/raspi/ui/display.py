@@ -71,6 +71,12 @@ class Display:
         if self._enabled:
             self.view.render_boot_screen(face, phrase)
 
+    def render_pairing(self, setup_url, pairing_code):
+        """Render the first-boot QR setup state."""
+
+        if self._enabled:
+            self.view.render_pairing_screen(setup_url, pairing_code)
+
     def render_flight(self, flight, stats):
         """Render flight information"""
         if self._enabled:

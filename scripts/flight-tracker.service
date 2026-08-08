@@ -1,14 +1,18 @@
 [Unit]
 Description=Flight Tracker Complete System
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/flight-tracker
-ExecStart=/home/pi/flight-tracker/scripts/start-raspi-all.sh
+ExecStart=/usr/bin/make -C /home/pi/flight-tracker pi
+ExecStop=/usr/bin/make -C /home/pi/flight-tracker stop
 Restart=always
 RestartSec=10
+TimeoutStopSec=15
+Environment=PYTHONUNBUFFERED=1
 StandardOutput=journal
 StandardError=journal
 

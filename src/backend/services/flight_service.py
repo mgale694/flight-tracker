@@ -224,50 +224,6 @@ class FlightTrackerService:
             "timestamp": datetime.utcnow().isoformat() + "Z"
         }
     
-    def _parse_flight_data(
-        self, 
-        flight_id: str, 
-        flight_data: List, 
-        distance: float
-    ) -> Dict:
-        """Parse raw flight data into structured format (legacy method).
-        
-        Args:
-            flight_id: Flight identifier
-            flight_data: Raw flight data array from FlightRadar24
-            distance: Distance from tracking point in meters
-            
-        Returns:
-            Parsed flight data dictionary
-        """
-        # FlightRadar24 data format (indices):
-        # 0: flight_id, 1: lat, 2: lon, 3: heading, 4: altitude (ft),
-        # 5: speed (knots), 6: squawk, 7: radar, 8: aircraft type,
-        # 9: registration, 10: timestamp, 11: origin, 12: destination,
-        # 13: flight number, 14: on_ground, 15: vertical_speed, 16: callsign
-        
-        origin_code = flight_data[11] if len(flight_data) > 11 and flight_data[11] else "N/A"
-        dest_code = flight_data[12] if len(flight_data) > 12 and flight_data[12] else "N/A"
-        
-        return {
-            "id": flight_id,
-            "callsign": flight_data[16] if len(flight_data) > 16 else flight_data[13] if len(flight_data) > 13 else "N/A",
-            "registration": flight_data[9] if len(flight_data) > 9 and flight_data[9] else "N/A",
-            "aircraft": flight_data[8] if len(flight_data) > 8 and flight_data[8] else "Unknown",
-            "airline": self._extract_airline(flight_data[16] if len(flight_data) > 16 else ""),
-            "origin": origin_code,
-            "destination": dest_code,
-            "origin_name": origin_code,
-            "destination_name": dest_code,
-            "altitude": int(flight_data[4]) if len(flight_data) > 4 and flight_data[4] else 0,
-            "speed": int(flight_data[5]) if len(flight_data) > 5 and flight_data[5] else 0,
-            "heading": int(flight_data[3]) if len(flight_data) > 3 and flight_data[3] else 0,
-            "latitude": float(flight_data[1]) if len(flight_data) > 1 else 0.0,
-            "longitude": float(flight_data[2]) if len(flight_data) > 2 else 0.0,
-            "distance": round(distance, 2),
-            "timestamp": datetime.utcnow().isoformat() + "Z"
-        }
-    
     def _extract_airline(self, callsign: str) -> str:
         """Extract airline code from callsign.
         

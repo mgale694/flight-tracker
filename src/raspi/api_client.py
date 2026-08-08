@@ -39,3 +39,17 @@ class BackendAPIClient:
             return response.status_code == 200
         except requests.exceptions.RequestException:
             return False
+
+    def get_pairing_status(self, device_id: str) -> Optional[Dict]:
+        """Get safe provisioning status for this display."""
+
+        try:
+            response = self.session.get(
+                f"{self.base_url}/api/v1/devices/{device_id}/pairing-status",
+                timeout=5,
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as error:
+            logging.warning(f"Could not retrieve device pairing status: {error}")
+            return None

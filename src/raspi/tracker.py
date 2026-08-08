@@ -37,6 +37,14 @@ class FlightTracker:
             return self._get_flights_from_backend()
         else:
             return self._get_flights_standalone()
+
+    def get_pairing_status(self) -> Optional[dict]:
+        """Return backend pairing status when running in API mode."""
+
+        if not self.use_backend:
+            return {"paired": True}
+        device_id = self.config.get("main", {}).get("device_id", "dev-kit-001")
+        return self.api_client.get_pairing_status(device_id)
     
     def _get_flights_from_backend(self) -> List:
         """Get flights from backend API"""

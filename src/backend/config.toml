@@ -6,6 +6,18 @@ max_elapsed_time = 1800
 display_hold_time = 30
 display_fields = ["FROM", "AIRLINE", "MODEL", "REG", "ROUTE"]
 
+[viewing_zone]
+bearing_degrees = 0
+field_of_view_degrees = 80
+min_distance_km = 0
+max_distance_km = 35
+
+[device]
+public_id = "dev-kit-001"
+pairing_code = "SKY281"
+paired = false
+setup_url = "auto"
+
 [logging]
 max_activities = 500
 categories = ["SYSTEM", "RADAR", "FLIGHT", "CONFIG", "ERROR", "INFO"]

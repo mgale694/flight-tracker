@@ -5,6 +5,7 @@ import toml
 import signal
 import sys
 from pathlib import Path
+from urllib.parse import urlencode
 
 import faces
 import utils
@@ -35,6 +36,11 @@ class FlightTrackerAgent:
         ui_config = self.config.get("ui", {})
         self.boot_duration = ui_config.get("boot_screen_duration", 10)
         self.flight_interval = ui_config.get("flight_rotation_interval", 5)
+        main_config = self.config.get("main", {})
+        self.device_id = main_config.get("device_id", "dev-kit-001")
+        self.pairing_code = main_config.get("pairing_code", "SKY281")
+        self.setup_url = main_config.get("setup_url", "auto")
+        self.pairing_poll_interval = main_config.get("pairing_poll_interval", 5)
         
         self.running = False
         self.current_flight_index = 0
@@ -66,6 +72,9 @@ class FlightTrackerAgent:
     def run(self):
         """Main run loop"""
         self.running = True
+        if not self._wait_for_pairing():
+            self.shutdown()
+            return
         self.boot()
         
         logging.info("Entering main flight tracking loop")
@@ -112,6 +121,34 @@ class FlightTrackerAgent:
             logging.error(f"Error in main loop: {e}", exc_info=True)
         finally:
             self.shutdown()
+
+    def _pairing_url(self):
+        """Build the phone URL shown by the first-boot QR code."""
+
+        base_url = self.setup_url
+        if base_url == "auto":
+            base_url = f"http://{utils.get_local_ip()}:5173/setup"
+        separator = "&" if "?" in base_url else "?"
+        query = urlencode({"d": self.device_id, "c": self.pairing_code})
+        return f"{base_url}{separator}{query}"
+
+    def _wait_for_pairing(self):
+        """Keep setup on-screen until the backend confirms pairing."""
+
+        pairing_rendered = False
+        while self.running:
+            status = self.tracker.get_pairing_status()
+            if status and status.get("paired"):
+                logging.info("Device pairing confirmed")
+                return True
+
+            if not pairing_rendered:
+                logging.info("Device requires setup; displaying pairing QR code")
+                self.display.render_pairing(self._pairing_url(), self.pairing_code)
+                pairing_rendered = True
+
+            time.sleep(self.pairing_poll_interval)
+        return False
     
     def _signal_handler(self, signum, frame):
         """Handle signals (Ctrl+C, SIGTERM) for graceful shutdown"""

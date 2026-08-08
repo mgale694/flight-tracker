@@ -2,9 +2,13 @@
  * API client for communicating with the Flight Tracker backend
  */
 
-import type { Flight, Config, ConfigUpdate, Activity, HealthResponse, APIResponse } from './types';
+import type { Activity, Config, ConfigUpdate, Flight, PairingStatus } from './types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
+interface APIErrorPayload {
+  detail?: string;
+}
 
 class APIClient {
   private baseUrl: string;
@@ -29,8 +33,10 @@ class APIClient {
       });
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ detail: response.statusText }));
-        throw new Error(error.detail || `HTTP ${response.status}: ${response.statusText}`);
+        const payload: APIErrorPayload = await response
+          .json()
+          .catch(() => ({ detail: response.statusText }));
+        throw new Error(payload.detail || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       return await response.json();
@@ -43,31 +49,10 @@ class APIClient {
   }
 
   /**
-   * Get API information
-   */
-  async getAPIInfo(): Promise<APIResponse> {
-    return this.fetchJSON<APIResponse>('/');
-  }
-
-  /**
-   * Health check
-   */
-  async healthCheck(): Promise<HealthResponse> {
-    return this.fetchJSON<HealthResponse>('/api/health');
-  }
-
-  /**
    * Get current flights in the configured area
    */
   async getFlights(): Promise<Flight[]> {
     return this.fetchJSON<Flight[]>('/api/flights');
-  }
-
-  /**
-   * Get detailed information about a specific flight
-   */
-  async getFlightDetails(flightId: string): Promise<any> {
-    return this.fetchJSON(`/api/flight/${flightId}`);
   }
 
   /**
@@ -119,12 +104,16 @@ class APIClient {
     });
   }
 
-  /**
-   * Shutdown the flight tracker system
-   */
-  async shutdownSystem(): Promise<{ status: string; message: string }> {
-    return this.fetchJSON('/api/system/shutdown', {
+  async getPairingStatus(deviceId: string): Promise<PairingStatus> {
+    return this.fetchJSON<PairingStatus>(
+      `/api/v1/devices/${encodeURIComponent(deviceId)}/pairing-status`,
+    );
+  }
+
+  async pairDevice(deviceId: string, pairingCode: string): Promise<PairingStatus> {
+    return this.fetchJSON<PairingStatus>(`/api/v1/devices/${encodeURIComponent(deviceId)}/pair`, {
       method: 'POST',
+      body: JSON.stringify({ pairing_code: pairingCode }),
     });
   }
 }

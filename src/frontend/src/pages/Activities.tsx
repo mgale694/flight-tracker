@@ -2,7 +2,7 @@
  * Activities page - Activity log viewer
  */
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Activity } from '../types';
 import { api } from '../api';
 import './Activities.css';
@@ -23,7 +23,7 @@ export default function Activities() {
   const [filter, setFilter] = useState<string>('');
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  const fetchActivities = async () => {
+  const fetchActivities = useCallback(async () => {
     try {
       setError(null);
       const data = await api.getActivities(100, filter || undefined);
@@ -33,21 +33,22 @@ export default function Activities() {
       setError(err instanceof Error ? err.message : 'Failed to fetch activities');
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchActivities();
   }, [filter]);
 
   useEffect(() => {
-    if (!autoRefresh) return;
-
-    const interval = setInterval(fetchActivities, 3000);
-    return () => clearInterval(interval);
-  }, [autoRefresh, filter]);
+    const initialRefresh = window.setTimeout(() => void fetchActivities(), 0);
+    if (!autoRefresh) {
+      return () => window.clearTimeout(initialRefresh);
+    }
+    const interval = window.setInterval(() => void fetchActivities(), 15000);
+    return () => {
+      window.clearTimeout(initialRefresh);
+      window.clearInterval(interval);
+    };
+  }, [autoRefresh, fetchActivities]);
 
   const handleClearLogs = async () => {
-    if (!confirm('Are you sure you want to clear all activity logs?')) {
+    if (!window.confirm('Are you sure you want to clear all activity logs?')) {
       return;
     }
 
@@ -91,14 +92,14 @@ export default function Activities() {
             onClick={fetchActivities}
             disabled={loading}
           >
-            🔄 Refresh
+            Refresh
           </button>
           
           <button 
             className="btn btn-secondary" 
             onClick={handleClearLogs}
           >
-            🗑️ Clear Logs
+            Clear logs
           </button>
         </div>
       </div>

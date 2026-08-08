@@ -5,7 +5,9 @@ from .schemas import (
     ActivityLog,
     HealthResponse,
     APIResponse,
-    MessageResponse
+    MessageResponse,
+    PairDeviceRequest,
+    PairingStatus,
 )
 from .enums import ActivityCategory, APIStatus
 
@@ -16,6 +18,8 @@ __all__ = [
     "HealthResponse",
     "APIResponse",
     "MessageResponse",
+    "PairDeviceRequest",
+    "PairingStatus",
     "ActivityCategory",
     "APIStatus"
 ]

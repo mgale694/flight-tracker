@@ -24,32 +24,23 @@ sudo ./scripts/install-gpio-packages.sh
 sudo raspi-config
 # Navigate: Interface Options → SPI → Enable → Reboot
 
-# 4. Run everything!
-./scripts/start-raspi-all.sh
+# 4. Build and run everything
+make pi
 ```
 
 Access from your laptop: The script will show you the URLs (e.g., `http://192.168.0.220:5173`)
 
 ## First Time Configuration
 
-1. Open `http://<pi-ip>:5173/settings` in your browser
-2. Enter your home address or postcode
-3. Set search radius (5000-15000m recommended)
-4. Save - flights will appear within seconds!
+1. Wait for the QR code and pairing code on the e-paper display.
+2. Scan the QR code with your phone on the same Wi-Fi network.
+3. Continue through development sign-in and confirm the displayed pairing code.
+4. Enter the window location, direction, field of view, and clear distance.
+5. Save; the Pi notices pairing on its next poll and starts tracking.
 
 ## What Gets Started
 
-The `start-raspi-all.sh` script launches:
-
-1. **Backend API** (port 8000) - Flight tracking and configuration
-2. **Frontend Web Server** (port 5173) - Dashboard and settings interface
-3. **E-ink Display Client** - Shows flights on the hardware display
-
-All three components run on the Raspberry Pi and are accessible from any device on your network!
-
-## What Gets Started
-
-The `start-raspi-all.sh` script launches:
+`make pi` launches:
 
 1. **Backend API** (port 8000) - Flight tracking and configuration
 2. **Frontend Web Server** (port 5173) - Dashboard and settings interface
@@ -61,7 +52,8 @@ All three components run on the Raspberry Pi and are accessible from any device 
 
 To make the Flight Tracker start automatically when your Pi boots:
 
-### Option 1: Systemd Service (Recommended)
+The checked-in service runs `make pi` directly and stops the managed processes
+with `make stop`.
 
 ```bash
 # Copy service file
@@ -81,22 +73,6 @@ sudo systemctl status flight-tracker
 
 # View logs
 sudo journalctl -u flight-tracker -f
-```
-
-### Option 2: rc.local
-
-Add to `/etc/rc.local` (before `exit 0`):
-
-```bash
-su - pi -c "/home/pi/flight-tracker/scripts/start-raspi-all.sh" &
-```
-
-### Option 3: Crontab
-
-```bash
-crontab -e
-# Add this line:
-@reboot /home/pi/flight-tracker/scripts/start-raspi-all.sh
 ```
 
 ## Hardware Setup

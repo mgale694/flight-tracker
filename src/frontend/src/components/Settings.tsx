@@ -3,17 +3,12 @@
  */
 
 import { useState, useEffect } from 'react';
-import type { Config, ConfigUpdate } from '../types';
+import type { ConfigUpdate } from '../types';
 import { api } from '../api';
 import DisplayFieldSelector from './DisplayFieldSelector';
 import './Settings.css';
 
-interface SettingsProps {
-  onConfigUpdate?: () => void;
-}
-
-export default function Settings({ onConfigUpdate }: SettingsProps) {
-  const [config, setConfig] = useState<Config | null>(null);
+export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,13 +25,17 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
       setLoading(true);
       setError(null);
       const data = await api.getConfig();
-      setConfig(data);
       setFormData({
         address: data.main.address,
         search_radius_meters: data.main.search_radius_meters,
         max_flights: data.main.max_flights,
         max_elapsed_time: data.main.max_elapsed_time,
+        display_hold_time: data.main.display_hold_time,
         display_fields: data.main.display_fields || ['FROM', 'AIRLINE', 'MODEL', 'REG', 'ROUTE'],
+        bearing_degrees: data.viewing_zone?.bearing_degrees,
+        field_of_view_degrees: data.viewing_zone?.field_of_view_degrees,
+        min_distance_km: data.viewing_zone?.min_distance_km,
+        max_distance_km: data.viewing_zone?.max_distance_km,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load configuration');
@@ -53,13 +52,8 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
       setError(null);
       setSuccess(false);
       
-      const updated = await api.updateConfig(formData);
-      setConfig(updated);
+      await api.updateConfig(formData);
       setSuccess(true);
-      
-      if (onConfigUpdate) {
-        onConfigUpdate();
-      }
       
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
@@ -103,7 +97,7 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
 
   return (
     <div className="settings">
-      <h2>Configuration</h2>
+      <h2>Window configuration</h2>
       
       {error && (
         <div className="alert alert-error">
@@ -120,8 +114,8 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
       <form onSubmit={handleSubmit} className="settings-form">
         <div className="form-group">
           <label htmlFor="address">
-            Location Address
-            <span className="label-hint">The address to track flights around</span>
+            Window location
+            <span className="label-hint">Your precise location stays in the product backend</span>
           </label>
           <input
             type="text"
@@ -135,8 +129,8 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
         
         <div className="form-group">
           <label htmlFor="radius">
-            Search Radius (meters)
-            <span className="label-hint">100 - 50,000 meters</span>
+            Legacy nearby radius (metres)
+            <span className="label-hint">Used until all live queries consume the viewing zone</span>
           </label>
           <input
             type="number"
@@ -240,17 +234,11 @@ export default function Settings({ onConfigUpdate }: SettingsProps) {
             onClick={handleClearDisplay}
             disabled={saving}
           >
-            🖥️ Clear Display
+            Clear display
           </button>
         </div>
       </div>
       
-      {config && (
-        <div className="current-config">
-          <h3>Current Configuration</h3>
-          <pre>{JSON.stringify(config, null, 2)}</pre>
-        </div>
-      )}
     </div>
   );
 }

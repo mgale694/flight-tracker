@@ -1,6 +1,7 @@
 """View rendering for flight information"""
 from PIL import Image, ImageDraw
 import logging
+import qrcode
 from . import fonts
 import sys
 sys.path.append('..')
@@ -52,6 +53,36 @@ class FlightView:
         # Rotate for hardware displays
         rotated_image = image.rotate(180)
         self.display.render(rotated_image)
+
+    def render_pairing_screen(self, setup_url, pairing_code):
+        """Render a scannable first-boot setup screen."""
+
+        image = Image.new("1", (self.width, self.height), 255)
+        draw = ImageDraw.Draw(image)
+        qr_code = qrcode.QRCode(
+            version=None,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=3,
+            border=1,
+        )
+        qr_code.add_data(setup_url)
+        qr_code.make(fit=True)
+        max_qr_size = self.height - 8
+        module_count = qr_code.modules_count + qr_code.border * 2
+        qr_code.box_size = max(1, max_qr_size // module_count)
+        qr_image = qr_code.make_image(fill_color="black", back_color="white").convert("1")
+        qr_y = (self.height - qr_image.height) // 2
+        image.paste(qr_image, (4, qr_y))
+
+        text_x = min(qr_image.width + 12, 124)
+        draw.text((text_x, 10), "SET UP", font=fonts.BoldBig, fill=0)
+        draw.line((text_x, 32, self.width - 4, 32), fill=0, width=1)
+        draw.text((text_x, 40), "Scan with", font=fonts.Medium, fill=0)
+        draw.text((text_x, 56), "your phone", font=fonts.Medium, fill=0)
+        draw.text((text_x, 82), "PAIRING CODE", font=fonts.Small, fill=0)
+        draw.text((text_x, 96), pairing_code, font=fonts.BoldBig, fill=0)
+
+        self.display.render(image.rotate(180))
 
     def render_flight_screen(self, flight, stats):
         """Render flight information screen with configurable fields"""

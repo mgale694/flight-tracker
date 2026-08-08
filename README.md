@@ -1,117 +1,108 @@
-# ✈️ Flight Tracker
+# Flight Tracker
 
-Real-time aircraft tracking system with web dashboard and e-ink display support.
+Flight Tracker is an e-paper window display that identifies aircraft in the
+part of the sky a person can actually see. A viewing zone combines the
+observer's location, window direction, field of view, visible distance, and
+optional altitude limits.
 
-![Flight Tracker](https://img.shields.io/badge/Python-3.11%2B-blue)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-
-## Features
-
-- 🛫 **Real-time flight tracking** using FlightRadar24 API
-- 🌐 **Web dashboard** with live updates and flight details
-- 🖥️ **E-ink display** support for Raspberry Pi (Waveshare 2.13" V4)
-- 📍 **Location-based** search with configurable radius
-- ⚙️ **Web-based settings** for easy configuration
-- 📊 **Activity logging** to track detection history
-- 🎨 **Dark/Light mode** with system preference detection
-
-## Quick Start
-
-### Desktop Development
-
-```bash
-# Start backend and frontend together
-./scripts/start-flight-tracker.sh
-```
-
-Access at: `http://localhost:5173`
-
-### Raspberry Pi (Complete System)
-
-```bash
-# One command to start everything
-./scripts/start-raspi-all.sh
-```
-
-Access from any device on your network: `http://<pi-ip>:5173`
-
-See [QUICKSTART.md](QUICKSTART.md) for detailed instructions.
+The repository is being migrated incrementally from a working FastAPI,
+Vite/React, and Raspberry Pi prototype into a modular product architecture. The
+prototype remains runnable while its new provider-neutral domain is built under
+`apps/api`.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────┐
-│                  Flight Tracker                 │
-├─────────────────────────────────────────────────┤
-│                                                 │
-│  ┌──────────────┐      ┌──────────────┐       │
-│  │   Backend    │◄────►│   Frontend   │       │
-│  │   FastAPI    │      │  React + TS  │       │
-│  │  Port 8000   │      │  Port 5173   │       │
-│  └──────────────┘      └──────────────┘       │
-│         │                                       │
-│         ▼                                       │
-│  ┌──────────────┐      ┌──────────────┐       │
-│  │ FlightRadar  │      │  Raspberry   │       │
-│  │     API      │      │  Pi Display  │       │
-│  └──────────────┘      └──────────────┘       │
-│                                                 │
-└─────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Web[Web setup and dashboard] --> API[FastAPI]
+    Device[Raspberry Pi / future device] --> API
+    API --> Snapshot[Snapshot application service]
+    Snapshot --> Domain[Viewing-zone geometry and ranking]
+    Snapshot --> Cache[(Regional and enrichment cache)]
+    Snapshot --> Provider[FlightDataProvider]
+    API --> Postgres[(PostgreSQL product state)]
+    Provider --> Mock[Deterministic mock]
+    Provider --> Live[Replaceable live providers]
 ```
 
-## Components
+The hardware consumes one small semantic `DisplaySnapshot`. It does not need to
+understand provider SDKs, enrichment APIs, or global aircraft ranking.
 
-### Backend (Python/FastAPI)
+## Repository structure
 
-- Flight data from FlightRadar24
-- Location-based filtering
-- Configuration management
-- Activity logging
-- RESTful API
+```text
+apps/api/               New provider-neutral API core and tests
+src/backend/            Runnable legacy FastAPI compatibility app
+src/frontend/           Runnable legacy Vite/React app
+src/raspi/              Runnable Raspberry Pi reference client
+docs/architecture/      Current state, target state, and migration plan
+docs/adr/               Architecture decisions
+scripts/                Existing development and Pi launch scripts
+```
 
-### Frontend (React/TypeScript)
+The web and Pi applications will move into `apps/` only when their replacement
+paths are implemented and tested.
 
-- Real-time flight dashboard
-- E-ink display simulator
-- Settings interface
-- Activity history
-- Dark/light theme
+## Local development
 
-### Raspberry Pi Client (Python)
+Python 3.12+, Node.js/npm, `uv`, and Make are required. One command creates an
+isolated environment, installs missing dependencies, and starts the API and web
+application:
 
-- E-ink display driver (Waveshare 2.13" V4)
-- Boot animations
-- Flight rendering
-- Hardware abstraction
+```bash
+make dev
+```
+
+Open `http://localhost:5173`; setup starts at `http://localhost:5173/setup`.
+Press Ctrl+C in the running terminal or use `make stop` from another terminal.
+
+Useful project commands:
+
+| Command | Purpose |
+| --- | --- |
+| `make dev` | Install missing dependencies and run API + web |
+| `make stop` | Gracefully stop a Makefile-managed stack |
+| `make doctor` | Verify tools, processes, API, web, and web-to-API proxy |
+| `make test` | Run domain, compatibility-backend, Pi simulator, and web build checks |
+| `make lint` | Run Ruff, mypy, ESLint, and strict TypeScript checks |
+| `make format` | Apply Python formatting and safe lint fixes |
+| `make pi` | Build and run API + web + e-paper client on Raspberry Pi |
+
+The former startup shell scripts remain as compatibility shims and delegate to
+these Make targets; they no longer manage environments or processes themselves.
+
+## Mock-provider core
+
+The provider-neutral core can also be tested directly:
+
+```bash
+cd apps/api
+python3.12 -m unittest discover -s tests -v
+```
+
+The seeded mock provider includes moving aircraft, complete and partial
+enrichment, empty sky, timeout, and rate-limit scenarios. It requires no paid
+credentials, network access, Raspberry Pi, or display.
+
+## Physical device
+
+The Waveshare 2.13-inch V4 Raspberry Pi prototype remains supported during the
+migration. Follow [RASPI_SETUP.md](RASPI_SETUP.md), then start the current full
+Pi stack with:
+
+```bash
+make pi
+```
+
+On an unpaired device, the e-paper screen remains on a QR and short pairing code.
+Scanning it opens the responsive setup flow on the phone; successful setup
+clears the pairing state on the device's next poll.
 
 ## Documentation
 
-- **[QUICKSTART.md](QUICKSTART.md)** - Get started quickly
-- **[RASPI_SETUP.md](RASPI_SETUP.md)** - Raspberry Pi setup guide
-- **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Common issues and fixes
-- **[docs/](docs/)** - Architecture and development docs
-
-## Requirements
-
-### Desktop Development
-
-- Python 3.11+
-- Node.js 18+
-- Internet connection
-
-### Raspberry Pi
-
-- Raspberry Pi (any model with GPIO)
-- Python 3.11+
-- Node.js 18+
-- Waveshare 2.13" V4 e-ink display (optional)
-- Internet connection
-
-## License
-
-MIT License - See [LICENSE](LICENSE) file
-
-## Contributing
-
-Contributions welcome! Please read the docs and feel free to submit PRs.
+- [Current-state audit](docs/architecture/current-state.md)
+- [Target architecture](docs/architecture/target-state.md)
+- [Incremental migration plan](docs/architecture/migration-plan.md)
+- [Raspberry Pi setup](RASPI_SETUP.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [MIT licence](LICENSE)

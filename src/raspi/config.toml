@@ -2,6 +2,10 @@
 # API Mode: connect to backend API server
 api_url = "http://localhost:8000"
 use_backend_api = true
+device_id = "dev-kit-001"
+pairing_code = "SKY281"
+setup_url = "auto"
+pairing_poll_interval = 5
 
 # Standalone Mode: use FlightRadar24 API directly
 address = "Your Location"

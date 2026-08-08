@@ -23,7 +23,8 @@ from routes import (
     setup_flight_routes,
     setup_config_routes,
     setup_activity_routes,
-    setup_system_routes
+    setup_system_routes,
+    setup_pairing_routes,
 )
 
 # Import utilities
@@ -76,11 +77,13 @@ def create_app() -> FastAPI:
     flight_router = setup_flight_routes(flight_service, config_service, activity_service)
     config_router = setup_config_routes(config_service, activity_service, flight_service)
     activity_router = setup_activity_routes(activity_service)
+    pairing_router = setup_pairing_routes(config_service, activity_service)
     
     app.include_router(system_router)
     app.include_router(flight_router)
     app.include_router(config_router)
     app.include_router(activity_router)
+    app.include_router(pairing_router)
     
     return app
 

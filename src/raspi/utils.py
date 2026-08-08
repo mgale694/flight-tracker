@@ -2,7 +2,19 @@
 import os
 import time
 import logging
+import socket
 from datetime import datetime
+
+
+def get_local_ip():
+    """Return the LAN address used by a phone to reach the setup website."""
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as connection:
+            connection.connect(("192.0.2.1", 80))
+            return str(connection.getsockname()[0])
+    except OSError:
+        return "localhost"
 
 
 def setup_logging(config):

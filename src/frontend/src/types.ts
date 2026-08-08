@@ -34,6 +34,19 @@ export interface Config {
     max_activities: number;
     categories: string[];
   };
+  viewing_zone?: {
+    bearing_degrees: number;
+    field_of_view_degrees: number;
+    min_distance_km: number;
+    max_distance_km: number;
+    min_altitude_ft?: number;
+    max_altitude_ft?: number;
+  };
+  device?: {
+    public_id: string;
+    paired: boolean;
+    setup_url: string;
+  };
 }
 
 export interface ConfigUpdate {
@@ -43,31 +56,26 @@ export interface ConfigUpdate {
   max_elapsed_time?: number;
   display_hold_time?: number;
   display_fields?: string[];
+  bearing_degrees?: number;
+  field_of_view_degrees?: number;
+  min_distance_km?: number;
+  max_distance_km?: number;
+  min_altitude_ft?: number;
+  max_altitude_ft?: number;
 }
 
 export interface Activity {
   timestamp: string;
   category: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
-export interface HealthResponse {
-  status: string;
-  timestamp: string;
-}
-
-export interface APIResponse {
-  name: string;
-  version: string;
-  status: string;
+export interface PairingStatus {
+  device_id: string;
+  paired: boolean;
+  setup_url: string;
+  authentication_mode: 'development' | 'production';
 }
 
 export type { Theme } from './theme';
-
-export interface SessionStats {
-  flightsDetected: number;
-  uniqueAircraft: number;
-  sessionStart: string;
-  sessionDuration: string;
-}

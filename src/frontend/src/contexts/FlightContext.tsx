@@ -2,34 +2,15 @@
  * Flight Context - Global state management for flight tracking
  */
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { Flight } from '../types';
 import { api } from '../api';
-
-interface FlightContextType {
-  flights: Flight[];
-  allTrackedFlights: Flight[];
-  sessionStats: {
-    flightsDetected: number;
-    uniqueAircraft: Set<string>;
-    sessionStart: string;
-  };
-  loading: boolean;
-  error: string | null;
-  displayHoldTime: number;
-  lastFlight: Flight | null;
-  lastFlightTime: number;
-}
-
-const FlightContext = createContext<FlightContextType | undefined>(undefined);
+import { FlightContext } from './flight-context';
 
 export function FlightProvider({ children }: { children: ReactNode }) {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [allTrackedFlights, setAllTrackedFlights] = useState<Flight[]>([]);
-  const [lastFlight, setLastFlight] = useState<Flight | null>(null);
-  const [lastFlightTime, setLastFlightTime] = useState<number>(0);
-  const [displayHoldTime, setDisplayHoldTime] = useState<number>(30);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sessionStats, setSessionStats] = useState({
@@ -38,19 +19,6 @@ export function FlightProvider({ children }: { children: ReactNode }) {
     sessionStart: new Date().toISOString(),
   });
 
-  // Fetch display hold time from config
-  useEffect(() => {
-    const fetchConfig = async () => {
-      try {
-        const config = await api.getConfig();
-        setDisplayHoldTime(config.main.display_hold_time || 30);
-      } catch (err) {
-        console.error('Failed to fetch config:', err);
-      }
-    };
-    fetchConfig();
-  }, []);
-
   // Fetch flights
   useEffect(() => {
     const fetchFlights = async () => {
@@ -58,12 +26,6 @@ export function FlightProvider({ children }: { children: ReactNode }) {
         setError(null);
         const data = await api.getFlights();
         setFlights(data);
-        
-        // If we have flights, update last flight and timestamp
-        if (data.length > 0) {
-          setLastFlight(data[0]);
-          setLastFlightTime(Date.now());
-        }
         
         // Add new flights to the tracked history (avoid duplicates by registration)
         setAllTrackedFlights(prev => {
@@ -90,8 +52,8 @@ export function FlightProvider({ children }: { children: ReactNode }) {
     // Initial fetch
     fetchFlights();
 
-    // Poll every 5 seconds
-    const interval = setInterval(fetchFlights, 5000);
+    // The web can update more often than e-paper, without hammering the API.
+    const interval = setInterval(fetchFlights, 15000);
 
     return () => clearInterval(interval);
   }, []);
@@ -104,20 +66,9 @@ export function FlightProvider({ children }: { children: ReactNode }) {
         sessionStats,
         loading,
         error,
-        displayHoldTime,
-        lastFlight,
-        lastFlightTime,
       }}
     >
       {children}
     </FlightContext.Provider>
   );
-}
-
-export function useFlights() {
-  const context = useContext(FlightContext);
-  if (context === undefined) {
-    throw new Error('useFlights must be used within a FlightProvider');
-  }
-  return context;
 }

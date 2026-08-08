@@ -1,4 +1,5 @@
 """Shared constants and configuration for Flight Tracker API."""
+import os
 from pathlib import Path
 
 # Application metadata
@@ -8,7 +9,7 @@ APP_DESCRIPTION = "Backend API for tracking flights in a specific geographic are
 
 # File paths
 BASE_DIR = Path(__file__).parent.parent
-CONFIG_FILE = BASE_DIR / "config.toml"
+CONFIG_FILE = Path(os.getenv("FLIGHT_TRACKER_CONFIG_FILE", BASE_DIR / "config.toml"))
 
 # Server configuration
 DEFAULT_HOST = "0.0.0.0"

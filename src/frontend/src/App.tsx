@@ -7,6 +7,7 @@ import { FlightProvider } from './contexts/FlightContext';
 import Tracker from './pages/Tracker';
 import Activities from './pages/Activities';
 import Settings from './pages/Settings';
+import Setup from './pages/Setup';
 
 function App() {
   const [theme, setTheme] = useTheme();
@@ -17,23 +18,28 @@ function App() {
 
   return (
     <Router>
-      <FlightProvider>
-        <div className="app">
+      <div className="app">
           <header className="app-header">
             <div className="header-content">
-              <h1 className="app-title">✈️ Flight Tracker</h1>
+              <NavLink to="/" className="app-brand" aria-label="Flight Tracker home">
+                <span className="brand-mark" aria-hidden="true">FT</span>
+                <span>
+                  <strong>Flight Tracker</strong>
+                  <small>Your window to the sky</small>
+                </span>
+              </NavLink>
               <nav className="app-nav">
                 <NavLink 
                   to="/" 
                   className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
                 >
-                  Tracker
+                  Window
                 </NavLink>
                 <NavLink 
                   to="/activities" 
                   className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
                 >
-                  Activities
+                  History
                 </NavLink>
                 <NavLink 
                   to="/settings" 
@@ -42,23 +48,24 @@ function App() {
                   Settings
                 </NavLink>
               </nav>
+              <NavLink to="/setup" className="setup-link">Add a display</NavLink>
               <ThemeSwitch theme={theme} onThemeChange={setTheme} />
             </div>
           </header>
 
           <main className="app-main">
             <Routes>
-              <Route path="/" element={<Tracker />} />
+              <Route path="/" element={<FlightProvider><Tracker /></FlightProvider>} />
               <Route path="/activities" element={<Activities />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/setup" element={<Setup />} />
             </Routes>
           </main>
 
           <footer className="app-footer">
-            <p>Flight Tracker v1.0.0 | Powered by FlightRadar24</p>
+            <p>Quietly identifying the aircraft beyond your window.</p>
           </footer>
-        </div>
-      </FlightProvider>
+      </div>
     </Router>
   );
 }
