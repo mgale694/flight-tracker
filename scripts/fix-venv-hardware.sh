@@ -1,41 +1,15 @@
 #!/bin/bash
-# Quick fix: Install hardware packages in the venv
-# Run this if start-raspi-all.sh shows "No module named 'spidev'"
+# Compatibility helper for older setup instructions.
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-echo "🔧 Installing hardware packages in virtual environment..."
+echo "Hardware modules are installed as Raspberry Pi OS packages."
+echo "The .venv-pi environment can see them through --system-site-packages."
 
-cd "$PROJECT_ROOT/src/backend"
-if [ -d "venv" ]; then
-    echo "📦 Found backend venv, installing packages..."
-    source venv/bin/activate
-    pip install spidev gpiozero RPi.GPIO lgpio rpi-lgpio || {
-        echo "⚠️  pip install failed, packages may need system install"
-        echo "   Run: sudo apt-get install python3-spidev python3-gpiozero python3-rpi.gpio python3-lgpio python3-rpi-lgpio"
-    }
-    deactivate
-    echo "✅ Backend venv updated"
-else
-    echo "⚠️  No backend venv found"
+if [ "$EUID" -eq 0 ]; then
+    exec "$SCRIPT_DIR/install-gpio-packages.sh"
 fi
 
-cd "$PROJECT_ROOT/src/raspi"
-if [ -f "requirements-pi.txt" ]; then
-    echo ""
-    echo "📦 Installing from requirements-pi.txt..."
-    pip3 install -r requirements-pi.txt --user --break-system-packages 2>/dev/null || \
-    pip3 install -r requirements-pi.txt --user || \
-    pip3 install -r requirements-pi.txt
-    echo "✅ Hardware packages installed"
-else
-    echo "⚠️  requirements-pi.txt not found"
-fi
-
-echo ""
-echo "✅ Done! Now run:"
-echo "   ./scripts/test-display.sh    # Test display hardware"
-echo "   ./scripts/start-raspi-all.sh # Start full system"
+exec sudo "$SCRIPT_DIR/install-gpio-packages.sh"

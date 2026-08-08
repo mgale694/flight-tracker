@@ -13,7 +13,7 @@ To set up:
    - epdconfig.py (hardware configuration)
 
 3. Make sure you have the required system packages:
-   sudo apt-get install python3-rpi.gpio python3-spidev python3-pil
+   sudo apt-get install python3-rpi-lgpio python3-lgpio python3-spidev python3-pil
 
 4. Enable SPI interface:
    sudo raspi-config

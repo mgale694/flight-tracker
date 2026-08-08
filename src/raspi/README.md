@@ -28,7 +28,7 @@ This client displays real-time flight information on a Waveshare 2.13" V4 e-ink 
 ```bash
 sudo apt-get update
 sudo apt-get install -y python3-pip python3-pil python3-numpy
-sudo apt-get install -y python3-rpi.gpio python3-spidev
+sudo apt-get install -y python3-rpi-lgpio python3-lgpio python3-spidev
 ```
 
 ### Enable SPI Interface

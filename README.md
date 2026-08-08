@@ -45,7 +45,7 @@ paths are implemented and tested.
 
 ## Local development
 
-Python 3.12+, Node.js/npm, `uv`, and Make are required. One command creates an
+Python 3.12+, Node.js/npm, and Make are required. One command creates an
 isolated environment, installs missing dependencies, and starts the API and web
 application:
 
@@ -77,7 +77,7 @@ The provider-neutral core can also be tested directly:
 
 ```bash
 cd apps/api
-python3.12 -m unittest discover -s tests -v
+python3 -m unittest discover -s tests -v
 ```
 
 The seeded mock provider includes moving aircraft, complete and partial

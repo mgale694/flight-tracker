@@ -1,8 +1,8 @@
 # Raspberry Pi Hardware Requirements
 # Install these ONLY on actual Raspberry Pi hardware
 
-# GPIO and SPI interface
-RPi.GPIO>=0.7.1
+# GPIO and SPI interface. rpi-lgpio provides the RPi.GPIO-compatible module;
+# installing both packages causes a conflict on current Raspberry Pi OS.
 spidev>=3.6
 gpiozero>=2.0
 

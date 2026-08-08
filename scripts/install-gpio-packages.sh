@@ -28,7 +28,6 @@ echo "📦 Installing GPIO and SPI packages..."
 apt-get install -y \
     python3-spidev \
     python3-gpiozero \
-    python3-rpi.gpio \
     python3-lgpio \
     python3-rpi-lgpio \
     python3-pil

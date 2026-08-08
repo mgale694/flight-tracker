@@ -1,18 +1,18 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-PYTHON ?= python3.12
-UV ?= uv
+PYTHON ?= python3
 DEV_VENV := .venv
 PI_VENV := .venv-pi
 DEV_PYTHON := $(DEV_VENV)/bin/python
 PI_PYTHON := $(PI_VENV)/bin/python
+DOCTOR_PYTHON = $(or $(wildcard $(DEV_PYTHON)),$(wildcard $(PI_PYTHON)),$(shell command -v $(PYTHON) 2>/dev/null))
 DEV_STAMP := $(DEV_VENV)/.flight-tracker-installed
 PI_STAMP := $(PI_VENV)/.flight-tracker-installed
 WEB_STAMP := src/frontend/node_modules/.flight-tracker-installed
 
 .PHONY: help install install-pi dev pi stop status doctor test lint format \
-	backend web device web-build
+	backend web device web-build check-python
 
 help: ## Show the available project commands
 	@printf '%s\n' \
@@ -31,11 +31,13 @@ help: ## Show the available project commands
 
 install: $(DEV_STAMP) $(WEB_STAMP) ## Install laptop development dependencies
 
-$(DEV_STAMP): src/backend/requirements.txt apps/api/requirements-dev.txt
-	@command -v $(UV) >/dev/null || { echo 'uv is required: https://docs.astral.sh/uv/'; exit 1; }
-	@command -v $(PYTHON) >/dev/null || { echo 'Python 3.12+ is required'; exit 1; }
-	@test -x $(DEV_PYTHON) || $(UV) venv --python $(PYTHON) $(DEV_VENV)
-	@$(UV) pip install --python $(DEV_PYTHON) \
+check-python: ## Verify that the selected interpreter is supported
+	@command -v $(PYTHON) >/dev/null || { echo 'Python 3.12 or newer is required (tried: $(PYTHON))'; exit 1; }
+	@$(PYTHON) -c 'import sys; required = (3, 12); actual = sys.version_info[:2]; raise SystemExit(0 if actual >= required else "Python 3.12 or newer is required; found %d.%d" % actual)'
+
+$(DEV_STAMP): src/backend/requirements.txt apps/api/requirements-dev.txt | check-python
+	@test -x $(DEV_PYTHON) || $(PYTHON) -m venv $(DEV_VENV)
+	@$(DEV_PYTHON) -m pip install \
 		-r src/backend/requirements.txt \
 		-r apps/api/requirements-dev.txt
 	@touch $(DEV_STAMP)
@@ -47,11 +49,9 @@ $(WEB_STAMP): src/frontend/package.json src/frontend/package-lock.json
 
 install-pi: $(PI_STAMP) $(WEB_STAMP) ## Install Pi runtime and web dependencies
 
-$(PI_STAMP): src/backend/requirements.txt src/raspi/requirements.txt
-	@command -v $(UV) >/dev/null || { echo 'uv is required: https://docs.astral.sh/uv/'; exit 1; }
-	@command -v $(PYTHON) >/dev/null || { echo 'Python 3.12+ is required'; exit 1; }
-	@test -x $(PI_PYTHON) || $(UV) venv --python $(PYTHON) --system-site-packages $(PI_VENV)
-	@$(UV) pip install --python $(PI_PYTHON) \
+$(PI_STAMP): src/backend/requirements.txt src/raspi/requirements.txt | check-python
+	@test -x $(PI_PYTHON) || $(PYTHON) -m venv --system-site-packages $(PI_VENV)
+	@$(PI_PYTHON) -m pip install \
 		-r src/backend/requirements.txt \
 		-r src/raspi/requirements.txt
 	@touch $(PI_STAMP)
@@ -68,8 +68,8 @@ stop: ## Stop managed local or Pi processes
 status: ## Show managed process status
 	@$(PYTHON) scripts/run_stack.py status
 
-doctor: ## Verify local tools and the running development stack
-	@$(PYTHON) scripts/run_stack.py doctor --python $(DEV_PYTHON)
+doctor: check-python ## Verify local tools and the running development stack
+	@$(PYTHON) scripts/run_stack.py doctor --python $(DOCTOR_PYTHON)
 
 test: install install-pi ## Run backend, device simulator, and frontend verification
 	@cd apps/api && ../../$(DEV_PYTHON) -m unittest discover -s tests -v

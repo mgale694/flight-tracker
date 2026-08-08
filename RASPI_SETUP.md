@@ -8,6 +8,7 @@ Run the complete Flight Tracker system on your Raspberry Pi with backend API, we
 - Waveshare 2.13" V4 e-ink display (optional)
 - Internet connection
 - MicroSD card with Raspberry Pi OS
+- Python 3.12 or newer, Node.js/npm, Git, and Make
 
 ## Quick Start
 
@@ -17,14 +18,18 @@ cd ~
 git clone https://github.com/mgale694/flight-tracker.git
 cd flight-tracker
 
-# 2. Install GPIO system packages (for e-ink display)
+# 2. Install the runtime tools
+sudo apt-get update
+sudo apt-get install -y git make python3 python3-venv nodejs npm
+
+# 3. Install GPIO system packages (for e-ink display)
 sudo ./scripts/install-gpio-packages.sh
 
-# 3. Enable SPI interface
+# 4. Enable SPI interface
 sudo raspi-config
 # Navigate: Interface Options → SPI → Enable → Reboot
 
-# 4. Build and run everything
+# 5. Build and run everything
 make pi
 ```
 
@@ -95,9 +100,10 @@ This script will:
 **Option 2: Manual Install**
 
 ```bash
-# Install system packages
+# Install system packages. python3-rpi-lgpio provides the RPi.GPIO API on
+# current Raspberry Pi OS; do not install the conflicting python3-rpi.gpio.
 sudo apt-get update
-sudo apt-get install -y python3-rpi.gpio python3-spidev python3-pil git
+sudo apt-get install -y python3-rpi-lgpio python3-lgpio python3-spidev python3-pil git
 
 # Clone Waveshare library
 cd ~/flight-tracker/src/raspi/ui/hw/libs

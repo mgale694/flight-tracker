@@ -165,7 +165,7 @@ def main():
         print("\nFix with:")
         print("  pip3 install spidev gpiozero RPi.GPIO Pillow")
         print("  or")
-        print("  sudo apt-get install python3-spidev python3-gpiozero python3-rpi.gpio python3-pil")
+        print("  sudo apt-get install python3-spidev python3-gpiozero python3-rpi-lgpio python3-pil")
         return False
     
     # Test 2: Waveshare library

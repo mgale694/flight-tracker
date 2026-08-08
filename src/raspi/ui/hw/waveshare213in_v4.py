@@ -36,7 +36,7 @@ class Waveshare213V4(DisplayImpl):
                 f"Cannot import Waveshare EPD module (missing Pi libraries): {e}"
             )
             logging.warning("This is normal when running on non-Pi systems")
-            logging.warning("Install with: sudo apt-get install python3-rpi.gpio python3-spidev")
+            logging.warning("Install with: sudo apt-get install python3-rpi-lgpio python3-spidev")
             self._display = None
         except Exception as e:
             logging.error(f"Failed to initialize Waveshare hardware: {e}")
